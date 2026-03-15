@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.tmix.education.data.model.ClassInfo
@@ -45,18 +46,22 @@ fun ClassDetailScreen(
             isLoading = true
             error = null
 
-            // Load class info
-            val classResult = classRepository.getClass(classId)
-            classResult.onSuccess { info ->
-                classInfo = info
-            }.onFailure { e ->
-                error = e.message
-            }
+            try {
+                // Load class info
+                val classResult = classRepository.getClass(classId)
+                classResult.onSuccess { info ->
+                    classInfo = info
+                }.onFailure { e ->
+                    error = e.message
+                }
 
-            // Load class sessions
-            val sessionsResult = classRepository.getClassSessions(classId, limit = 50)
-            sessionsResult.onSuccess { sessionList ->
-                sessions = sessionList.sortedBy { it.date }
+                // Load class sessions
+                val sessionsResult = classRepository.getClassSessions(classId, limit = 50)
+                sessionsResult.onSuccess { sessionList ->
+                    sessions = sessionList.sortedBy { it.date }
+                }
+            } catch (e: Exception) {
+                error = "Không thể tải thông tin lớp: ${e.message}"
             }
 
             isLoading = false
@@ -66,9 +71,20 @@ fun ClassDetailScreen(
     val className = classInfo?.name ?: "Lớp học"
     val teacher = classInfo?.teacher?.name ?: "Chưa phân công"
     val schedule = classInfo?.schedule?.let { sched ->
-        val days = sched.daysOfWeek?.joinToString(", ") ?: ""
+        val days = sched.daysOfWeek?.joinToString(", ") { dayNum ->
+            when (dayNum.trim()) {
+                "0" -> "CN"
+                "1" -> "T2"
+                "2" -> "T3"
+                "3" -> "T4"
+                "4" -> "T5"
+                "5" -> "T6"
+                "6" -> "T7"
+                else -> dayNum
+            }
+        } ?: ""
         val time = sched.timeSlots?.let { "${it.startTime} - ${it.endTime}" } ?: ""
-        if (days.isNotEmpty() && time.isNotEmpty()) "$days - $time" else days.ifEmpty { time }
+        if (days.isNotEmpty() && time.isNotEmpty()) "$days · $time" else days.ifEmpty { time }
     } ?: "Chưa có lịch"
     val room = classInfo?.room ?: "Chưa có phòng"
 
@@ -130,28 +146,59 @@ fun ClassDetailScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Class info card
+                    // Class header card
                     item {
                         Card(
                             shape = TMixShapes.Card,
                             colors = CardDefaults.cardColors(containerColor = TMixNavy)
                         ) {
                             Column(Modifier.padding(20.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        Modifier.size(56.dp).clip(CircleShape).background(TMixRed),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(Icons.Default.MenuBook, null, Modifier.size(28.dp), tint = Color.White)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                        Box(
+                                            Modifier.size(56.dp).clip(CircleShape).background(TMixRed),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(Icons.Default.MenuBook, null, Modifier.size(28.dp), tint = Color.White)
+                                        }
+                                        Spacer(Modifier.width(16.dp))
+                                        Column {
+                                            Text(className, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
+                                            Text(teacher, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(0.8f))
+                                        }
                                     }
-                                    Spacer(Modifier.width(16.dp))
-                                    Column {
-                                        Text(className, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
-                                        Text(teacher, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(0.8f))
+                                    // Status badge
+                                    val statusText = when (classInfo?.status) {
+                                        "active" -> "Đang học"
+                                        "upcoming" -> "Sắp mở"
+                                        "closed" -> "Đã kết thúc"
+                                        else -> classInfo?.status ?: ""
+                                    }
+                                    val statusColor = when (classInfo?.status) {
+                                        "active" -> Success
+                                        "upcoming" -> Warning
+                                        "closed" -> Error
+                                        else -> TextSecondary
+                                    }
+                                    Surface(
+                                        color = statusColor.copy(0.2f),
+                                        shape = TMixShapes.Chip
+                                    ) {
+                                        Text(
+                                            statusText,
+                                            Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = statusColor
+                                        )
                                     }
                                 }
 
-                                Spacer(Modifier.height(20.dp))
+                                Spacer(Modifier.height(16.dp))
 
                                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -176,6 +223,82 @@ fun ClassDetailScreen(
                                         color = TMixRed,
                                         trackColor = Color.White.copy(0.3f)
                                     )
+                                }
+                            }
+                        }
+                    }
+
+                    // Class details card
+                    item {
+                        Card(shape = TMixShapes.Card, elevation = CardDefaults.cardElevation(2.dp)) {
+                            Column(Modifier.padding(20.dp)) {
+                                Text("Thông tin lớp học", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                                Spacer(Modifier.height(16.dp))
+                                
+                                // Start date
+                                classInfo?.schedule?.startDate?.let { startDate ->
+                                    DetailRow(
+                                        icon = Icons.Default.CalendarMonth,
+                                        label = "Ngày bắt đầu",
+                                        value = formatDate(startDate)
+                                    )
+                                }
+                                
+                                // End date
+                                classInfo?.schedule?.endDate?.let { endDate ->
+                                    DetailRow(
+                                        icon = Icons.Default.EventAvailable,
+                                        label = "Ngày kết thúc",
+                                        value = formatDate(endDate)
+                                    )
+                                }
+                                
+                                // Grade
+                                classInfo?.grade?.let { grade ->
+                                    DetailRow(
+                                        icon = Icons.Default.School,
+                                        label = "Khối lớp",
+                                        value = "Lớp $grade"
+                                    )
+                                }
+                                
+                                // Year
+                                classInfo?.year?.let { year ->
+                                    DetailRow(
+                                        icon = Icons.Default.DateRange,
+                                        label = "Năm học",
+                                        value = "$year"
+                                    )
+                                }
+                                
+                                // Fee per lesson
+                                classInfo?.feePerLesson?.let { fee ->
+                                    DetailRow(
+                                        icon = Icons.Default.Payments,
+                                        label = "Học phí / buổi",
+                                        value = "${java.text.NumberFormat.getNumberInstance(java.util.Locale("vi", "VN")).format(fee.toLong())}đ"
+                                    )
+                                }
+                                
+                                // Max students
+                                classInfo?.maxStudent?.let { max ->
+                                    DetailRow(
+                                        icon = Icons.Default.Groups,
+                                        label = "Sĩ số tối đa",
+                                        value = "$max học sinh"
+                                    )
+                                }
+                                
+                                // Description
+                                classInfo?.description?.let { desc ->
+                                    if (desc.isNotBlank()) {
+                                        Spacer(Modifier.height(12.dp))
+                                        HorizontalDivider()
+                                        Spacer(Modifier.height(12.dp))
+                                        Text("Mô tả", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                                        Spacer(Modifier.height(8.dp))
+                                        Text(desc, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                                    }
                                 }
                             }
                         }
@@ -250,3 +373,40 @@ fun SessionCard(number: Int, session: Session) {
         }
     }
 }
+
+/**
+ * A row displaying an icon, label, and value for class detail info
+ */
+@Composable
+private fun DetailRow(icon: ImageVector, label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, null, Modifier.size(20.dp), tint = TMixNavy)
+        Spacer(Modifier.width(12.dp))
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = TextSecondary, modifier = Modifier.weight(1f))
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+    }
+}
+
+/**
+ * Format ISO date string to dd/MM/yyyy
+ */
+private fun formatDate(isoDate: String): String {
+    return try {
+        // Handle "2026-01-05T00:00:00.000Z" format
+        val datePart = isoDate.take(10) // "2026-01-05"
+        val parts = datePart.split("-")
+        if (parts.size == 3) {
+            "${parts[2]}/${parts[1]}/${parts[0]}" // "05/01/2026"
+        } else {
+            datePart
+        }
+    } catch (_: Exception) {
+        isoDate.take(10)
+    }
+}
+

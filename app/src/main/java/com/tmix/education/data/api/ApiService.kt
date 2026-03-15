@@ -16,9 +16,9 @@ interface ApiService {
     
     /**
      * User login (Student/Parent)
-     * POST /auth/user/login
+     * POST /auth/login (unified endpoint)
      */
-    @POST("auth/user/login")
+    @POST("auth/login")
     suspend fun login(
         @Body request: LoginRequest
     ): Response<ApiResponse<LoginResponse>>
@@ -275,4 +275,39 @@ interface ApiService {
     suspend fun getAttemptResult(
         @Path("id") attemptId: String
     ): Response<ApiResponse<TestAttempt>>
+    
+    // =====================================================
+    // FORGOT PASSWORD
+    // =====================================================
+    
+    /**
+     * Send password reset email
+     * POST /auth/send-request-password
+     */
+    @POST("auth/send-request-password")
+    suspend fun sendPasswordResetRequest(
+        @Body request: Map<String, String>
+    ): Response<ApiResponse<Unit>>
+    
+    /**
+     * Reset password with OTP code
+     * PATCH /auth/reset-password
+     */
+    @PATCH("auth/reset-password")
+    suspend fun resetPassword(
+        @Body request: Map<String, String>
+    ): Response<ApiResponse<Unit>>
+    
+    // =====================================================
+    // ADVERTISEMENTS
+    // =====================================================
+    
+    /**
+     * Get advertisement banners
+     * GET /advertisements/banners/:limit
+     */
+    @GET("advertisements/banners/{limit}")
+    suspend fun getAdvertisementBanners(
+        @Path("limit") limit: Int = 5
+    ): Response<ApiResponse<List<Advertisement>>>
 }

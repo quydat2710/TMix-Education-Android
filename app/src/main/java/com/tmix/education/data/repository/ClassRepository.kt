@@ -101,7 +101,9 @@ class ClassRepository(
             val response = apiService.getClassSessions(classId, page, limit)
             
             if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data!!.data)
+                // GSON can set non-null Kotlin fields to null, so use safe access
+                val sessions = response.body()?.data?.data ?: emptyList()
+                Result.success(sessions)
             } else {
                 Result.success(emptyList())
             }

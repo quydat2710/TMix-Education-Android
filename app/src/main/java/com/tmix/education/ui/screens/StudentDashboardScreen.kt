@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tmix.education.ui.theme.*
 import com.tmix.education.ui.viewmodel.StudentDashboardViewModel
+import com.tmix.education.ui.components.BannerCarousel
 
 /**
  * Student Dashboard Screen
@@ -105,6 +106,11 @@ fun StudentDashboardScreen(
                     }
                 }
                 
+                // Banner carousel
+                item {
+                    BannerCarousel(Modifier.fillMaxWidth())
+                }
+                
                 // Stats Row
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -152,10 +158,12 @@ fun StudentDashboardScreen(
                     } else {
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             items(state.classes) { classInfo ->
+                                val classId = classInfo.classInfo?.id ?: ""
+                                val progress = state.classProgress[classId] ?: 0f
                                 ClassCard(
                                     name = classInfo.classInfo?.name ?: "Lớp học",
                                     teacher = classInfo.classInfo?.teacher?.name ?: "Giáo viên",
-                                    progress = 0.7f, // TODO: Calculate from sessions
+                                    progress = progress,
                                     onClick = { 
                                         classInfo.classInfo?.id?.let { onClassClick(it) }
                                     }

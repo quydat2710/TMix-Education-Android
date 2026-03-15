@@ -19,6 +19,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tmix.education.data.model.Student
 import com.tmix.education.ui.theme.*
 import com.tmix.education.ui.viewmodel.ParentDashboardViewModel
+import com.tmix.education.ui.components.BannerCarousel
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -89,6 +90,11 @@ fun ParentDashboardScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Banner carousel
+                    item {
+                        BannerCarousel(Modifier.fillMaxWidth())
+                    }
+                    
                     // Quick stats
                     item {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {

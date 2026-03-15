@@ -12,16 +12,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tmix.education.ui.theme.*
+import com.tmix.education.ui.viewmodel.ProfileViewModel
+import com.tmix.education.ui.viewmodel.ProfileUiState
 
 /**
  * Change Password Screen
+ * Connected to ProfileViewModel for real API call (PATCH /auth/change-password)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChangePasswordScreen(
     onBack: () -> Unit = {},
-    onSuccess: () -> Unit = {}
+    onSuccess: () -> Unit = {},
+    profileViewModel: ProfileViewModel = viewModel()
 ) {
     var currentPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
@@ -31,12 +36,23 @@ fun ChangePasswordScreen(
     var showNewPassword by remember { mutableStateOf(false) }
     var showConfirmPassword by remember { mutableStateOf(false) }
     
-    var isLoading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
+    val changePasswordState by profileViewModel.changePasswordState.collectAsState()
+    val isLoading = changePasswordState is ProfileUiState.Loading
+    val error = (changePasswordState as? ProfileUiState.Error)?.message
+    val successMessage = (changePasswordState as? ProfileUiState.Success)?.message
     
     val isValid = currentPassword.isNotEmpty() && 
                   newPassword.length >= 8 && 
                   newPassword == confirmPassword
+    
+    // Handle success
+    LaunchedEffect(changePasswordState) {
+        if (changePasswordState is ProfileUiState.Success) {
+            kotlinx.coroutines.delay(1500)
+            profileViewModel.resetChangePasswordState()
+            onSuccess()
+        }
+    }
     
     Scaffold(
         topBar = {
@@ -74,12 +90,31 @@ fun ChangePasswordScreen(
                 }
             }
             
+            // Success message
+            successMessage?.let {
+                Card(
+                    shape = TMixShapes.Card,
+                    colors = CardDefaults.cardColors(containerColor = SuccessLight)
+                ) {
+                    Row(Modifier.padding(16.dp)) {
+                        Icon(Icons.Default.CheckCircle, null, tint = Success)
+                        Spacer(Modifier.width(12.dp))
+                        Text(it, color = Success)
+                    }
+                }
+            }
+            
             Spacer(Modifier.height(8.dp))
             
             // Current password
             OutlinedTextField(
                 value = currentPassword,
-                onValueChange = { currentPassword = it; error = null },
+                onValueChange = { 
+                    currentPassword = it
+                    if (changePasswordState is ProfileUiState.Error) {
+                        profileViewModel.resetChangePasswordState()
+                    }
+                },
                 label = { Text("Mật khẩu hiện tại") },
                 leadingIcon = { Icon(Icons.Default.Lock, null) },
                 trailingIcon = {
@@ -93,13 +128,19 @@ fun ChangePasswordScreen(
                 visualTransformation = if (showCurrentPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
                 shape = TMixShapes.TextField,
-                singleLine = true
+                singleLine = true,
+                enabled = !isLoading
             )
             
             // New password
             OutlinedTextField(
                 value = newPassword,
-                onValueChange = { newPassword = it; error = null },
+                onValueChange = { 
+                    newPassword = it
+                    if (changePasswordState is ProfileUiState.Error) {
+                        profileViewModel.resetChangePasswordState()
+                    }
+                },
                 label = { Text("Mật khẩu mới") },
                 leadingIcon = { Icon(Icons.Default.LockOpen, null) },
                 trailingIcon = {
@@ -117,13 +158,19 @@ fun ChangePasswordScreen(
                 isError = newPassword.isNotEmpty() && newPassword.length < 8,
                 supportingText = if (newPassword.isNotEmpty() && newPassword.length < 8) {
                     { Text("Mật khẩu phải có ít nhất 8 ký tự", color = Error) }
-                } else null
+                } else null,
+                enabled = !isLoading
             )
             
             // Confirm password
             OutlinedTextField(
                 value = confirmPassword,
-                onValueChange = { confirmPassword = it; error = null },
+                onValueChange = { 
+                    confirmPassword = it
+                    if (changePasswordState is ProfileUiState.Error) {
+                        profileViewModel.resetChangePasswordState()
+                    }
+                },
                 label = { Text("Xác nhận mật khẩu mới") },
                 leadingIcon = { Icon(Icons.Default.LockOpen, null) },
                 trailingIcon = {
@@ -141,10 +188,11 @@ fun ChangePasswordScreen(
                 isError = confirmPassword.isNotEmpty() && confirmPassword != newPassword,
                 supportingText = if (confirmPassword.isNotEmpty() && confirmPassword != newPassword) {
                     { Text("Mật khẩu không khớp", color = Error) }
-                } else null
+                } else null,
+                enabled = !isLoading
             )
             
-            // Error message
+            // Error message from API
             error?.let {
                 Card(
                     shape = TMixShapes.Card,
@@ -162,9 +210,11 @@ fun ChangePasswordScreen(
             
             Button(
                 onClick = {
-                    isLoading = true
-                    // Simulate API call
-                    onSuccess()
+                    profileViewModel.changePassword(
+                        oldPassword = currentPassword,
+                        newPassword = newPassword,
+                        confirmPassword = confirmPassword
+                    )
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = TMixShapes.Button,

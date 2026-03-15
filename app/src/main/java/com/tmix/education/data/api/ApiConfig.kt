@@ -22,7 +22,7 @@ object ApiConfig {
     
     // For physical device - use your computer's local IP
     // Find your IP: Windows -> ipconfig, Mac/Linux -> ifconfig
-    private const val BASE_URL_PHYSICAL_DEVICE = "http://192.168.0.105:8080/api/v1/"
+    private const val BASE_URL_PHYSICAL_DEVICE = "http://192.168.0.100:8080/api/v1/"
     
     // TODO: Replace with production URL when available
     private const val BASE_URL_PRODUCTION = "https://api.tmix.education/api/v1/"

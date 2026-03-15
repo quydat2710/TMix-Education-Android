@@ -35,7 +35,8 @@ import com.tmix.education.ui.viewmodel.LoginUiState
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel = viewModel(),
-    onLoginSuccess: (isStudent: Boolean) -> Unit = {}
+    onLoginSuccess: (isStudent: Boolean) -> Unit = {},
+    onForgotPassword: () -> Unit = {}
 ) {
     val focusManager = LocalFocusManager.current
     val loginState by viewModel.loginState.collectAsState()
@@ -217,6 +218,20 @@ fun LoginScreen(
                     }
                     
                     Spacer(modifier = Modifier.height(12.dp))
+                    
+                    // Forgot password link
+                    TextButton(
+                        onClick = onForgotPassword,
+                        enabled = !isLoading
+                    ) {
+                        Text(
+                            "Quên mật khẩu?",
+                            color = TMixNavy,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(4.dp))
                     
                     // Biometric (placeholder - can be implemented later)
                     OutlinedButton(

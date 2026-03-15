@@ -11,25 +11,45 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tmix.education.ui.theme.*
 import com.tmix.education.data.model.User
+import com.tmix.education.ui.viewmodel.ProfileViewModel
+import com.tmix.education.ui.viewmodel.ProfileUiState
 
 /**
  * Edit Profile Screen
+ * Connected to ProfileViewModel for real API calls
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
     user: User? = null,
     onBack: () -> Unit = {},
-    onSave: () -> Unit = {}
+    onSave: () -> Unit = {},
+    profileViewModel: ProfileViewModel = viewModel()
 ) {
-    var fullName by remember { mutableStateOf(user?.name ?: "") }
-    var email by remember { mutableStateOf(user?.email ?: "") }
-    var phone by remember { mutableStateOf(user?.phone ?: "") }
-    var dob by remember { mutableStateOf(user?.dayOfBirth ?: "") }
-    var address by remember { mutableStateOf(user?.address ?: "") }
-    var isLoading by remember { mutableStateOf(false) }
+    val currentUser = user ?: profileViewModel.getCurrentUser()
+    
+    var fullName by remember { mutableStateOf(currentUser?.name ?: "") }
+    var email by remember { mutableStateOf(currentUser?.email ?: "") }
+    var phone by remember { mutableStateOf(currentUser?.phone ?: "") }
+    var dob by remember { mutableStateOf(currentUser?.dayOfBirth ?: "") }
+    var address by remember { mutableStateOf(currentUser?.address ?: "") }
+    
+    val updateState by profileViewModel.updateState.collectAsState()
+    val isLoading = updateState is ProfileUiState.Loading
+    val error = (updateState as? ProfileUiState.Error)?.message
+    val successMessage = (updateState as? ProfileUiState.Success)?.message
+    
+    // Handle success
+    LaunchedEffect(updateState) {
+        if (updateState is ProfileUiState.Success) {
+            kotlinx.coroutines.delay(1000) // Show success briefly
+            profileViewModel.resetUpdateState()
+            onSave()
+        }
+    }
     
     Scaffold(
         topBar = {
@@ -38,18 +58,6 @@ fun EditProfileScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Quay lại")
-                    }
-                },
-                actions = {
-                    TextButton(
-                        onClick = {
-                            isLoading = true
-                            // Simulate save
-                            onSave()
-                        },
-                        enabled = !isLoading
-                    ) {
-                        Text("Lưu", color = TMixRed)
                     }
                 }
             )
@@ -84,6 +92,34 @@ fun EditProfileScreen(
                 }
             }
             
+            // Success message
+            successMessage?.let {
+                Card(
+                    shape = TMixShapes.Card,
+                    colors = CardDefaults.cardColors(containerColor = SuccessLight)
+                ) {
+                    Row(Modifier.padding(16.dp)) {
+                        Icon(Icons.Default.CheckCircle, null, tint = Success)
+                        Spacer(Modifier.width(12.dp))
+                        Text(it, color = Success)
+                    }
+                }
+            }
+            
+            // Error message
+            error?.let {
+                Card(
+                    shape = TMixShapes.Card,
+                    colors = CardDefaults.cardColors(containerColor = ErrorLight)
+                ) {
+                    Row(Modifier.padding(16.dp)) {
+                        Icon(Icons.Default.Error, null, tint = Error)
+                        Spacer(Modifier.width(12.dp))
+                        Text(it, color = Error)
+                    }
+                }
+            }
+            
             // Form fields
             OutlinedTextField(
                 value = fullName,
@@ -92,7 +128,8 @@ fun EditProfileScreen(
                 leadingIcon = { Icon(Icons.Default.Person, null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = TMixShapes.TextField,
-                singleLine = true
+                singleLine = true,
+                enabled = !isLoading
             )
             
             OutlinedTextField(
@@ -113,7 +150,8 @@ fun EditProfileScreen(
                 leadingIcon = { Icon(Icons.Default.Phone, null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = TMixShapes.TextField,
-                singleLine = true
+                singleLine = true,
+                enabled = !isLoading
             )
             
             OutlinedTextField(
@@ -128,7 +166,8 @@ fun EditProfileScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
                 shape = TMixShapes.TextField,
-                singleLine = true
+                singleLine = true,
+                enabled = !isLoading
             )
             
             OutlinedTextField(
@@ -138,15 +177,20 @@ fun EditProfileScreen(
                 leadingIcon = { Icon(Icons.Default.LocationOn, null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = TMixShapes.TextField,
-                maxLines = 2
+                maxLines = 2,
+                enabled = !isLoading
             )
             
             Spacer(Modifier.height(16.dp))
             
             Button(
                 onClick = {
-                    isLoading = true
-                    onSave()
+                    profileViewModel.updateProfile(
+                        name = fullName,
+                        phone = phone,
+                        dayOfBirth = dob,
+                        address = address
+                    )
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = TMixShapes.Button,

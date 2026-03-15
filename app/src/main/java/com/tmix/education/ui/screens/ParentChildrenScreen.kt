@@ -29,6 +29,7 @@ import com.tmix.education.ui.viewmodel.ParentDashboardViewModel
 @Composable
 fun ParentChildrenScreen(
     viewModel: ParentDashboardViewModel = viewModel(),
+    onChildClick: (String) -> Unit = {},
     onChildSchedule: () -> Unit = {},
     onChildPayment: () -> Unit = {}
 ) {
@@ -78,7 +79,12 @@ fun ParentChildrenScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(children) { child ->
-                        ChildCard(child, onSchedule = onChildSchedule, onPayment = onChildPayment)
+                        ChildCard(
+                            child, 
+                            onClick = { onChildClick(child.id) },
+                            onSchedule = onChildSchedule, 
+                            onPayment = onChildPayment
+                        )
                     }
                 }
             }
@@ -88,10 +94,11 @@ fun ParentChildrenScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChildCard(child: Student, onSchedule: () -> Unit = {}, onPayment: () -> Unit = {}) {
+fun ChildCard(child: Student, onClick: () -> Unit = {}, onSchedule: () -> Unit = {}, onPayment: () -> Unit = {}) {
     val classCount = child.classes?.size ?: 0
 
     Card(
+        onClick = onClick,
         shape = TMixShapes.Card,
         elevation = CardDefaults.cardElevation(4.dp)
     ) {

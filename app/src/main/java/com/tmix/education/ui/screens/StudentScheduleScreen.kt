@@ -20,10 +20,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.tmix.education.data.model.ScheduleItem
+import com.tmix.education.data.model.StudentClassInfo
+import com.tmix.education.data.repository.AuthRepository
+import com.tmix.education.data.repository.StudentRepository
 import com.tmix.education.ui.theme.*
-import com.tmix.education.ui.viewmodel.StudentDashboardViewModel
+import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -40,14 +42,18 @@ data class ScheduleEvent(
 
 /**
  * Student Schedule Screen
- * Weekly calendar view with class events - connected to real backend data
+ * Weekly calendar view - loads enrolled classes and maps schedule.daysOfWeek to calendar
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StudentScheduleScreen(
-    viewModel: StudentDashboardViewModel = viewModel()
-) {
-    val state by viewModel.state.collectAsState()
+fun StudentScheduleScreen() {
+    val authRepository = remember { AuthRepository() }
+    val studentRepository = remember { StudentRepository() }
+    
+    var classes by remember { mutableStateOf<List<StudentClassInfo>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var currentWeekStart by remember {
         mutableStateOf(LocalDate.now().minusDays(LocalDate.now().dayOfWeek.value.toLong() - 1))
@@ -56,33 +62,91 @@ fun StudentScheduleScreen(
     val weekDays = remember(currentWeekStart) {
         (0..6).map { currentWeekStart.plusDays(it.toLong()) }
     }
-
-    // Map real schedule data to ScheduleEvents, grouped by date
+    
+    val scope = rememberCoroutineScope()
+    
+    // Load student's enrolled classes
+    LaunchedEffect(Unit) {
+        scope.launch {
+            isLoading = true
+            error = null
+            val userId = authRepository.getCurrentUserId()
+            if (userId != null) {
+                val result = studentRepository.getStudent(userId)
+                result.onSuccess { student ->
+                    classes = student.classes ?: emptyList()
+                }.onFailure { e ->
+                    error = e.message ?: "Không thể tải lịch học"
+                }
+            } else {
+                error = "Chưa đăng nhập"
+            }
+            isLoading = false
+        }
+    }
+    
+    // Map day values to DayOfWeek for matching
+    // Backend stores days_of_week as numeric strings: "0"=Sunday, "1"=Monday, ..., "6"=Saturday
+    fun parseDayOfWeek(dayValue: String): DayOfWeek? {
+        return when (dayValue.trim()) {
+            // Numeric format (backend standard)
+            "0" -> DayOfWeek.SUNDAY
+            "1" -> DayOfWeek.MONDAY
+            "2" -> DayOfWeek.TUESDAY
+            "3" -> DayOfWeek.WEDNESDAY
+            "4" -> DayOfWeek.THURSDAY
+            "5" -> DayOfWeek.FRIDAY
+            "6" -> DayOfWeek.SATURDAY
+            // Text fallback
+            "monday", "thứ hai", "t2" -> DayOfWeek.MONDAY
+            "tuesday", "thứ ba", "t3" -> DayOfWeek.TUESDAY
+            "wednesday", "thứ tư", "t4" -> DayOfWeek.WEDNESDAY
+            "thursday", "thứ năm", "t5" -> DayOfWeek.THURSDAY
+            "friday", "thứ sáu", "t6" -> DayOfWeek.FRIDAY
+            "saturday", "thứ bảy", "t7" -> DayOfWeek.SATURDAY
+            "sunday", "chủ nhật", "cn" -> DayOfWeek.SUNDAY
+            else -> null
+        }
+    }
+    
+    // Generate events for the selected date based on class schedules
     val eventColors = listOf(TMixNavy, TMixRed, Info, Warning, Success)
-    val scheduleByDay = remember(state.schedule) {
-        val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-        state.schedule
-            .filter { it.date != null }
-            .groupBy { item ->
-                try {
-                    LocalDate.parse(item.date!!.take(10), dateFormatter)
-                } catch (e: Exception) {
-                    LocalDate.now()
+    
+    val scheduleByDay = remember(classes, currentWeekStart) {
+        val result = mutableMapOf<LocalDate, List<ScheduleEvent>>()
+        
+        weekDays.forEach { date ->
+            val eventsForDay = mutableListOf<ScheduleEvent>()
+            
+            classes.forEachIndexed { index, enrollment ->
+                val classInfo = enrollment.classInfo
+                val schedule = classInfo.schedule
+                
+                if (schedule != null && schedule.daysOfWeek != null) {
+                    val classDays = schedule.daysOfWeek.mapNotNull { parseDayOfWeek(it) }
+                    
+                    if (date.dayOfWeek in classDays) {
+                        eventsForDay.add(
+                            ScheduleEvent(
+                                id = classInfo.id,
+                                className = classInfo.name,
+                                startTime = schedule.timeSlots?.startTime ?: "",
+                                endTime = schedule.timeSlots?.endTime ?: "",
+                                room = classInfo.room ?: "Chưa có phòng",
+                                teacher = classInfo.teacher?.name ?: "Chưa phân công",
+                                color = eventColors[index % eventColors.size]
+                            )
+                        )
+                    }
                 }
             }
-            .mapValues { (_, items) ->
-                items.mapIndexed { index, item ->
-                    ScheduleEvent(
-                        id = item.id ?: "${index}",
-                        className = item.className ?: "Lớp học",
-                        startTime = item.startTime ?: "",
-                        endTime = item.endTime ?: "",
-                        room = item.room ?: "Chưa có phòng",
-                        teacher = item.teacherName ?: "Chưa phân công",
-                        color = eventColors[index % eventColors.size]
-                    )
-                }
+            
+            if (eventsForDay.isNotEmpty()) {
+                result[date] = eventsForDay
             }
+        }
+        
+        result
     }
 
     val todayEvents = scheduleByDay[selectedDate] ?: emptyList()
@@ -206,49 +270,79 @@ fun StudentScheduleScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Loading state
-            if (state.isLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = TMixRed)
-                }
-            } else if (todayEvents.isEmpty()) {
-                Box(
-                    Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("🎉", style = MaterialTheme.typography.displayMedium)
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Không có lịch học",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = TextSecondary
-                        )
-                        Text(
-                            if (selectedDate.dayOfWeek.value >= 6) "Cuối tuần nghỉ ngơi!" else "Chọn ngày khác để xem lịch",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
-                        )
+            // Content
+            when {
+                isLoading -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = TMixRed)
                     }
                 }
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    item {
-                        Text(
-                            "${todayEvents.size} buổi học",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = TextSecondary
-                        )
+                error != null -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.ErrorOutline, null, Modifier.size(64.dp), tint = Error)
+                            Spacer(Modifier.height(16.dp))
+                            Text(error ?: "Có lỗi xảy ra", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                            Spacer(Modifier.height(16.dp))
+                            Button(
+                                onClick = { /* TODO: retry */ },
+                                colors = ButtonDefaults.buttonColors(containerColor = TMixRed)
+                            ) {
+                                Text("Thử lại")
+                            }
+                        }
                     }
-
-                    items(todayEvents) { event ->
-                        ScheduleEventCard(event)
+                }
+                classes.isEmpty() -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.EventBusy, null, Modifier.size(64.dp), tint = TextSecondary.copy(0.5f))
+                            Spacer(Modifier.height(16.dp))
+                            Text("Chưa đăng ký lớp nào", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                            Text("Liên hệ trung tâm để đăng ký lớp học", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        }
                     }
+                }
+                todayEvents.isEmpty() -> {
+                    Box(
+                        Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("🎉", style = MaterialTheme.typography.displayMedium)
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "Không có lịch học",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = TextSecondary
+                            )
+                            Text(
+                                if (selectedDate.dayOfWeek.value >= 6) "Cuối tuần nghỉ ngơi!" else "Chọn ngày khác để xem lịch",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                        }
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        item {
+                            Text(
+                                "${todayEvents.size} buổi học",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = TextSecondary
+                            )
+                        }
 
-                    item { Spacer(Modifier.height(16.dp)) }
+                        items(todayEvents) { event ->
+                            ScheduleEventCard(event)
+                        }
+
+                        item { Spacer(Modifier.height(16.dp)) }
+                    }
                 }
             }
         }

@@ -38,6 +38,12 @@ sealed class Screen(val route: String) {
     data object EditProfile : Screen("profile/edit")
     data object ChangePassword : Screen("profile/password")
     data object HelpCenter : Screen("help")
+    data object ForgotPassword : Screen("forgot-password")
+    
+    // Parent Detail
+    data object ParentChildDetail : Screen("parent/child/{childId}") {
+        fun createRoute(childId: String) = "parent/child/$childId"
+    }
 }
 
 /**

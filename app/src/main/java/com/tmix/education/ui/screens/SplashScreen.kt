@@ -18,16 +18,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tmix.education.R
+import com.tmix.education.data.repository.AuthRepository
 import com.tmix.education.ui.theme.*
 import kotlinx.coroutines.delay
 
 /**
  * Splash Screen with animated logo
+ * Checks auth state: if already logged in, navigates directly to dashboard
  */
 @Composable
 fun SplashScreen(
-    onSplashComplete: () -> Unit
+    onNavigateToLogin: () -> Unit,
+    onNavigateToStudentDashboard: () -> Unit,
+    onNavigateToParentDashboard: () -> Unit
 ) {
+    val authRepository = remember { AuthRepository() }
+
     // Animation states
     val infiniteTransition = rememberInfiniteTransition(label = "splash")
     
@@ -71,8 +77,23 @@ fun SplashScreen(
         logoVisible = true
         delay(500)
         textVisible = true
-        delay(2000)
-        onSplashComplete()
+        delay(1500)
+        
+        // Check auth state - if logged in, go directly to dashboard
+        if (authRepository.isLoggedIn()) {
+            val user = authRepository.getCurrentUser()
+            if (user != null) {
+                if (authRepository.isStudent()) {
+                    onNavigateToStudentDashboard()
+                } else {
+                    onNavigateToParentDashboard()
+                }
+            } else {
+                onNavigateToLogin()
+            }
+        } else {
+            onNavigateToLogin()
+        }
     }
     
     Box(
@@ -132,7 +153,7 @@ fun SplashScreen(
         
         // Footer
         Text(
-            text = "© 2025 TMIX Education",
+            text = "© 2026 TMIX Education",
             style = MaterialTheme.typography.bodySmall,
             color = Color.White.copy(alpha = 0.4f),
             modifier = Modifier

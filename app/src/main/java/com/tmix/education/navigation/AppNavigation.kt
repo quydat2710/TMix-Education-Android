@@ -29,8 +29,9 @@ fun AppNavigation() {
     
     // Hide bottom bar on these screens
     val hideBottomBarRoutes = listOf(
-        "splash", "login", 
+        "splash", "login", "forgot-password",
         "student/class/", "student/test/",
+        "parent/child/",
         "notifications", "profile/edit", "profile/password", "help"
     )
     val showBottomBar = (currentDestination?.route?.startsWith("student/") == true ||
@@ -81,11 +82,21 @@ fun AppNavigation() {
             startDestination = Screen.Splash.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            // Splash Screen
+            // Splash Screen - checks auth state
             composable(Screen.Splash.route) {
                 SplashScreen(
-                    onSplashComplete = {
+                    onNavigateToLogin = {
                         navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToStudentDashboard = {
+                        navController.navigate(Screen.StudentDashboard.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToParentDashboard = {
+                        navController.navigate(Screen.ParentDashboard.route) {
                             popUpTo(Screen.Splash.route) { inclusive = true }
                         }
                     }
@@ -107,6 +118,9 @@ fun AppNavigation() {
                         navController.navigate(destination) {
                             popUpTo(Screen.Login.route) { inclusive = true }
                         }
+                    },
+                    onForgotPassword = {
+                        navController.navigate(Screen.ForgotPassword.route)
                     }
                 )
             }
@@ -184,6 +198,7 @@ fun AppNavigation() {
             
             composable(Screen.ParentChildren.route) { 
                 ParentChildrenScreen(
+                    onChildClick = { childId -> navController.navigate(Screen.ParentChildDetail.createRoute(childId)) },
                     onChildSchedule = { navController.navigate(Screen.StudentSchedule.route) },
                     onChildPayment = { navController.navigate(Screen.ParentPayments.route) }
                 )
@@ -228,6 +243,30 @@ fun AppNavigation() {
             
             composable(Screen.HelpCenter.route) {
                 HelpCenterScreen(onBack = { navController.popBackStack() })
+            }
+            
+            // Forgot Password
+            composable(Screen.ForgotPassword.route) {
+                ForgotPasswordScreen(
+                    onBack = { navController.popBackStack() },
+                    onSuccess = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.ForgotPassword.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            
+            // Parent Child Detail
+            composable(
+                Screen.ParentChildDetail.route,
+                arguments = listOf(navArgument("childId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val childId = backStackEntry.arguments?.getString("childId") ?: ""
+                ParentChildDetailScreen(
+                    childId = childId,
+                    onBack = { navController.popBackStack() }
+                )
             }
         }
     }
