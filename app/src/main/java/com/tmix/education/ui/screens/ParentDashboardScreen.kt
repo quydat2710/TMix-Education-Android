@@ -124,11 +124,12 @@ fun ParentDashboardScreen(
                                     Spacer(Modifier.width(12.dp))
                                     Column {
                                         val pendingText = if (state.totalPendingAmount > 0) {
-                                            val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
-                                            formatter.format(state.totalPendingAmount)
+                                            val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+                                            formatter.maximumFractionDigits = 0
+                                            "${formatter.format(state.totalPendingAmount.toLong())}đ"
                                         } else "0đ"
-                                        Text(pendingText, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
-                                        Text("Học phí", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(0.8f))
+                                        Text(pendingText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                                        Text("Học phí/tháng", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(0.8f))
                                     }
                                 }
                             }

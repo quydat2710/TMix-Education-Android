@@ -73,11 +73,36 @@ class ParentDashboardViewModel(
             val paymentsResult = parentRepository.getAllChildrenPayments(parentId)
             paymentsResult.onSuccess { payments ->
                 val pending = payments.filter { !it.isPaid }
-                _state.value = _state.value.copy(
-                    payments = payments,
-                    pendingPaymentsCount = pending.size,
-                    totalPendingAmount = pending.sumOf { it.remainingAmount }
-                )
+                val pendingAmount = pending.sumOf { it.remainingAmount }
+                
+                if (pendingAmount > 0) {
+                    _state.value = _state.value.copy(
+                        payments = payments,
+                        pendingPaymentsCount = pending.size,
+                        totalPendingAmount = pendingAmount
+                    )
+                } else {
+                    // Calculate estimated monthly fee from children's active classes
+                    val children = _state.value.children
+                    var estimatedMonthlyFee = 0.0
+                    children.forEach { child ->
+                        child.classes?.forEach { enrollment ->
+                            val classInfo = enrollment.classInfo
+                            if (classInfo != null && classInfo.status == "active") {
+                                val feePerLesson = classInfo.feePerLesson ?: 0.0
+                                val lessonsPerWeek = classInfo.schedule?.daysOfWeek?.size ?: 0
+                                val monthlyFee = feePerLesson * lessonsPerWeek * 4 // ~4 weeks/month
+                                val discount = enrollment.discountPercent / 100.0
+                                estimatedMonthlyFee += monthlyFee * (1 - discount)
+                            }
+                        }
+                    }
+                    _state.value = _state.value.copy(
+                        payments = payments,
+                        pendingPaymentsCount = 0,
+                        totalPendingAmount = estimatedMonthlyFee
+                    )
+                }
             }
             
             _state.value = _state.value.copy(isLoading = false)

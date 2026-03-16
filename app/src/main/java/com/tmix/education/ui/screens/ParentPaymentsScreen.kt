@@ -61,12 +61,123 @@ fun ParentPaymentsScreen(
                 }
             }
             payments.isEmpty() -> {
-                Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Receipt, null, Modifier.size(80.dp), tint = TextSecondary.copy(0.5f))
-                        Spacer(Modifier.height(16.dp))
-                        Text("Chưa có hóa đơn nào", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
-                        Text("Hóa đơn sẽ hiển thị khi có phát sinh học phí", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                // Show estimated fee breakdown from class data
+                val children = state.children
+                val hasClasses = children.any { (it.classes?.size ?: 0) > 0 }
+                
+                if (!hasClasses) {
+                    Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Receipt, null, Modifier.size(80.dp), tint = TextSecondary.copy(0.5f))
+                            Spacer(Modifier.height(16.dp))
+                            Text("Chưa có hóa đơn nào", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
+                            Text("Hóa đơn sẽ hiển thị khi có phát sinh học phí", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize().padding(padding),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Total estimated monthly fee
+                        item {
+                            Card(shape = TMixShapes.Card, colors = CardDefaults.cardColors(containerColor = TMixNavy)) {
+                                Column(Modifier.padding(20.dp)) {
+                                    Text("Học phí ước tính / tháng", style = MaterialTheme.typography.titleSmall, color = Color.White.copy(0.8f))
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        formatPaymentCurrency(state.totalPendingAmount.toLong()),
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text("Chưa phát sinh hóa đơn", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(0.6f))
+                                }
+                            }
+                        }
+                        
+                        // Fee per child per class
+                        children.forEach { child ->
+                            val activeClasses = child.classes?.filter { 
+                                it.classInfo?.status == "active" 
+                            } ?: emptyList()
+                            
+                            if (activeClasses.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        child.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                                
+                                activeClasses.forEach { enrollment ->
+                                    val classInfo = enrollment.classInfo!!
+                                    val feePerLesson = classInfo.feePerLesson ?: 0.0
+                                    val lessonsPerWeek = classInfo.schedule?.daysOfWeek?.size ?: 0
+                                    val monthlyFee = feePerLesson * lessonsPerWeek * 4
+                                    val discount = enrollment.discountPercent
+                                    val finalFee = monthlyFee * (1 - discount / 100.0)
+                                    
+                                    item {
+                                        Card(shape = TMixShapes.Card, elevation = CardDefaults.cardElevation(2.dp)) {
+                                            Column(Modifier.padding(16.dp)) {
+                                                Row(
+                                                    Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Column(Modifier.weight(1f)) {
+                                                        Text(classInfo.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                                                        Text(
+                                                            classInfo.teacher?.name ?: "Chưa phân công",
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = TextSecondary
+                                                        )
+                                                    }
+                                                    Surface(color = SuccessLight, shape = TMixShapes.Chip) {
+                                                        Text("Đang học", Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = Success)
+                                                    }
+                                                }
+                                                Spacer(Modifier.height(12.dp))
+                                                HorizontalDivider()
+                                                Spacer(Modifier.height(12.dp))
+                                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                    Text("Học phí/buổi", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                                    Text(formatPaymentCurrency(feePerLesson.toLong()), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+                                                }
+                                                Spacer(Modifier.height(4.dp))
+                                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                    Text("Số buổi/tuần", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                                    Text("$lessonsPerWeek buổi", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium)
+                                                }
+                                                if (discount > 0) {
+                                                    Spacer(Modifier.height(4.dp))
+                                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                        Text("Giảm giá", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                                                        Text("-${discount.toInt()}%", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = Success)
+                                                    }
+                                                }
+                                                Spacer(Modifier.height(8.dp))
+                                                HorizontalDivider()
+                                                Spacer(Modifier.height(8.dp))
+                                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                    Text("Ước tính/tháng", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                                                    Text(
+                                                        formatPaymentCurrency(finalFee.toLong()),
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = TMixRed
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -107,7 +218,7 @@ fun ParentPaymentsScreen(
                 sheetState = sheetState,
                 shape = TMixShapes.BottomSheet
             ) {
-                PaymentQRSheetContent(selectedPayment!!) { showQRSheet = false }
+                PaymentQRSheetContent(selectedPayment!!, viewModel) { showQRSheet = false }
             }
         }
     }
@@ -187,9 +298,33 @@ fun PaymentStatusChip(status: String) {
 }
 
 @Composable
-fun PaymentQRSheetContent(payment: Payment, onClose: () -> Unit) {
+fun PaymentQRSheetContent(payment: Payment, viewModel: ParentDashboardViewModel, onClose: () -> Unit) {
     val amount = payment.remainingAmount.toLong()
-    val qrUrl = "https://img.vietqr.io/image/MB-0346857241-compact.png?amount=${amount}&addInfo=TMIX-${payment.id}"
+    var qrUrl by remember { mutableStateOf<String?>(null) }
+    var qrDescription by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(payment.id) {
+        isLoading = true
+        error = null
+        try {
+            val result = viewModel.getPaymentQRCode(payment.id, amount.toDouble())
+            result.onSuccess { qrResponse ->
+                qrUrl = qrResponse.qrDataUrl
+                qrDescription = qrResponse.description
+                isLoading = false
+            }.onFailure { e ->
+                // Fallback to direct SePay URL
+                qrUrl = "https://qr.sepay.vn/img?bank=MB&acc=0346857241&amount=$amount&des=TMIX ${payment.id}&template=compact"
+                isLoading = false
+            }
+        } catch (e: Exception) {
+            qrUrl = "https://qr.sepay.vn/img?bank=MB&acc=0346857241&amount=$amount&des=TMIX ${payment.id}&template=compact"
+            isLoading = false
+        }
+    }
 
     Column(
         Modifier.fillMaxWidth().padding(24.dp),
@@ -213,13 +348,19 @@ fun PaymentQRSheetContent(payment: Payment, onClose: () -> Unit) {
 
         Spacer(Modifier.height(16.dp))
 
-        Card(shape = TMixShapes.Card, elevation = CardDefaults.cardElevation(8.dp)) {
-            AsyncImage(
-                model = qrUrl,
-                contentDescription = "VietQR",
-                modifier = Modifier.size(250.dp),
-                contentScale = ContentScale.Fit
-            )
+        if (isLoading) {
+            Box(Modifier.size(250.dp), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = TMixRed)
+            }
+        } else if (qrUrl != null) {
+            Card(shape = TMixShapes.Card, elevation = CardDefaults.cardElevation(8.dp)) {
+                AsyncImage(
+                    model = qrUrl,
+                    contentDescription = "VietQR",
+                    modifier = Modifier.size(250.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
         }
 
         Spacer(Modifier.height(24.dp))
@@ -229,12 +370,16 @@ fun PaymentQRSheetContent(payment: Payment, onClose: () -> Unit) {
         Spacer(Modifier.height(8.dp))
 
         Text("Mở app ngân hàng và quét mã QR để thanh toán", style = MaterialTheme.typography.bodyMedium, color = TextSecondary, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(4.dp))
+        Text("Thanh toán sẽ được xác nhận tự động", style = MaterialTheme.typography.labelSmall, color = Success)
 
         Spacer(Modifier.height(32.dp))
     }
 }
 
 private fun formatPaymentCurrency(amount: Long): String {
-    val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
-    return formatter.format(amount)
+    val formatter = java.text.NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    formatter.maximumFractionDigits = 0
+    return "${formatter.format(amount)}đ"
 }
+
