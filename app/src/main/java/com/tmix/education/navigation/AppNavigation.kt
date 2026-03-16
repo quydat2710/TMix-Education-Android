@@ -372,7 +372,7 @@ fun AppNavigation() {
                     ) {
                         Box(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.Center) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_chatbot),
+                                painter = painterResource(id = R.drawable.ic_chatbot2),
                                 contentDescription = "Trợ lý AI",
                                 modifier = Modifier.fillMaxSize(),
                                 tint = Color.Unspecified

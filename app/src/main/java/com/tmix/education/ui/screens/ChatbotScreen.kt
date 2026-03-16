@@ -72,7 +72,7 @@ fun ChatbotScreen(
                                 .background(Brush.linearGradient(listOf(Color(0xFF667eea), Color(0xFF764ba2)))),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Chat, null, Modifier.size(20.dp), tint = Color.White)
+                            Icon(Icons.Default.SmartToy, null, Modifier.size(20.dp), tint = Color.White)
                         }
                         Spacer(Modifier.width(10.dp))
                         Column {
@@ -181,7 +181,7 @@ fun ChatbotScreen(
                                 .background(Color(0xFF7c3aed)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Chat, null, Modifier.size(18.dp), tint = Color.White)
+                            Icon(Icons.Default.SmartToy, null, Modifier.size(18.dp), tint = Color.White)
                         }
                         Spacer(Modifier.width(8.dp))
                     }
