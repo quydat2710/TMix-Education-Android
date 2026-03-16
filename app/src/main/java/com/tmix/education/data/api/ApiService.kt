@@ -331,4 +331,17 @@ interface ApiService {
     suspend fun getAdvertisementBanners(
         @Path("limit") limit: Int = 5
     ): Response<ApiResponse<List<Advertisement>>>
+    
+    // =====================================================
+    // CHATBOT
+    // =====================================================
+    
+    /**
+     * Send message to AI chatbot
+     * POST /chatbot/send
+     */
+    @POST("chatbot/send")
+    suspend fun sendChatMessage(
+        @Body request: Map<String, @JvmSuppressWildcards Any>
+    ): Response<Map<String, Any>>
 }
