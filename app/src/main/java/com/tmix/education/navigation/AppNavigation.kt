@@ -147,6 +147,10 @@ fun AppNavigation() {
                 )
             }
             
+            composable(Screen.StudentChatbot.route) {
+                ChatbotScreen(onBack = { navController.popBackStack() })
+            }
+            
             composable(Screen.StudentProfile.route) { 
                 ProfileScreen(
                     isStudent = true,

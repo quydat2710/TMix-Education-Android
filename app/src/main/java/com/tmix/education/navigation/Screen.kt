@@ -18,6 +18,7 @@ sealed class Screen(val route: String) {
     data object StudentSchedule : Screen("student/schedule")
     data object StudentTests : Screen("student/tests")
     data object StudentProfile : Screen("student/profile")
+    data object StudentChatbot : Screen("student/chatbot")
     
     // Student Detail Screens
     data object ClassDetail : Screen("student/class/{classId}") {
@@ -77,6 +78,10 @@ sealed class BottomNavItem(
         Screen.StudentProfile.route, "Tài khoản",
         Icons.Filled.Person, Icons.Outlined.Person
     )
+    data object StudentChatbot : BottomNavItem(
+        Screen.StudentChatbot.route, "Trợ lý AI",
+        Icons.Filled.SmartToy, Icons.Outlined.SmartToy
+    )
     
     // Parent
     data object ParentHome : BottomNavItem(
@@ -101,7 +106,7 @@ sealed class BottomNavItem(
     )
     
     companion object {
-        val studentItems = listOf(StudentHome, StudentClasses, StudentSchedule, StudentTests, StudentProfile)
+        val studentItems = listOf(StudentHome, StudentClasses, StudentTests, StudentChatbot, StudentProfile)
         val parentItems = listOf(ParentHome, ParentChildren, ParentSchedule, ParentPayments, ParentProfile)
     }
 }

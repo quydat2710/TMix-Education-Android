@@ -77,7 +77,7 @@ fun ChatbotScreen(
                         Spacer(Modifier.width(10.dp))
                         Column {
                             Text("TMix AI Assistant", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                            Text("Llama 3.3 • Online", style = MaterialTheme.typography.bodySmall, color = Color(0xFF16A34A))
+                            Text("• Online", style = MaterialTheme.typography.bodySmall, color = Color(0xFF16A34A))
                         }
                     }
                 },
