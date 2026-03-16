@@ -80,7 +80,7 @@ sealed class BottomNavItem(
     )
     data object StudentChatbot : BottomNavItem(
         Screen.StudentChatbot.route, "Trợ lý AI",
-        Icons.Filled.SmartToy, Icons.Outlined.SmartToy
+        Icons.Filled.Chat, Icons.Outlined.Chat
     )
     
     // Parent
@@ -106,7 +106,7 @@ sealed class BottomNavItem(
     )
     
     companion object {
-        val studentItems = listOf(StudentHome, StudentClasses, StudentTests, StudentChatbot, StudentProfile)
+        val studentItems = listOf(StudentHome, StudentClasses, StudentSchedule, StudentTests, StudentProfile)
         val parentItems = listOf(ParentHome, ParentChildren, ParentSchedule, ParentPayments, ParentProfile)
     }
 }
