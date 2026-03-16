@@ -4,12 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tmix.education.data.api.ApiConfig
 import com.tmix.education.data.model.SubmitTestRequest
+import com.tmix.education.data.model.SubmitWritingRequest
 import com.tmix.education.data.model.Test
 import com.tmix.education.data.model.TestAttempt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.File
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
 
 /**
  * UI States for Tests
@@ -141,5 +146,70 @@ class TestViewModel : ViewModel() {
      */
     fun resetSubmitState() {
         _submitState.value = SubmitState.Idle
+    }
+    
+    /**
+     * Reset test detail state
+     */
+    fun resetTestDetail() {
+        _testDetailState.value = TestDetailState.Loading
+    }
+    
+    /**
+     * Submit writing test
+     */
+    fun submitWriting(testId: String, text: String) {
+        viewModelScope.launch {
+            _submitState.value = SubmitState.Submitting
+            try {
+                val response = apiService.submitWriting(testId, SubmitWritingRequest(text))
+                if (response.isSuccessful) {
+                    val attempt = response.body()?.data
+                    if (attempt != null) {
+                        _submitState.value = SubmitState.Success(attempt)
+                    } else {
+                        _submitState.value = SubmitState.Error("Nộp bài thất bại")
+                    }
+                } else {
+                    _submitState.value = SubmitState.Error(
+                        response.body()?.message ?: "Nộp bài thất bại"
+                    )
+                }
+            } catch (e: Exception) {
+                _submitState.value = SubmitState.Error(
+                    e.message ?: "Lỗi kết nối"
+                )
+            }
+        }
+    }
+    
+    /**
+     * Submit speaking test (audio file)
+     */
+    fun submitSpeaking(testId: String, audioFile: File) {
+        viewModelScope.launch {
+            _submitState.value = SubmitState.Submitting
+            try {
+                val requestFile = audioFile.asRequestBody("audio/*".toMediaTypeOrNull())
+                val audioPart = MultipartBody.Part.createFormData("audio", audioFile.name, requestFile)
+                val response = apiService.submitSpeaking(testId, audioPart)
+                if (response.isSuccessful) {
+                    val attempt = response.body()?.data
+                    if (attempt != null) {
+                        _submitState.value = SubmitState.Success(attempt)
+                    } else {
+                        _submitState.value = SubmitState.Error("Nộp bài thất bại")
+                    }
+                } else {
+                    _submitState.value = SubmitState.Error(
+                        response.body()?.message ?: "Nộp bài thất bại"
+                    )
+                }
+            } catch (e: Exception) {
+                _submitState.value = SubmitState.Error(
+                    e.message ?: "Lỗi kết nối"
+                )
+            }
+        }
     }
 }

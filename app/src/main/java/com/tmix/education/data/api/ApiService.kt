@@ -258,6 +258,27 @@ interface ApiService {
     ): Response<ApiResponse<TestAttempt>>
     
     /**
+     * Submit writing test
+     * POST /tests/:id/submit/writing
+     */
+    @POST("tests/{id}/submit/writing")
+    suspend fun submitWriting(
+        @Path("id") testId: String,
+        @Body request: SubmitWritingRequest
+    ): Response<ApiResponse<TestAttempt>>
+    
+    /**
+     * Submit speaking test (audio file)
+     * POST /tests/:id/submit/speaking
+     */
+    @Multipart
+    @POST("tests/{id}/submit/speaking")
+    suspend fun submitSpeaking(
+        @Path("id") testId: String,
+        @Part audio: okhttp3.MultipartBody.Part
+    ): Response<ApiResponse<TestAttempt>>
+    
+    /**
      * Get student's attempt history
      * GET /tests/student/attempts
      */

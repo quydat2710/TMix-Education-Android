@@ -10,10 +10,10 @@ data class MCQuestion(
     val id: String,
     
     @SerializedName("question")
-    val question: String,
+    val question: String = "",
     
     @SerializedName("options")
-    val options: List<String>,
+    val options: List<String> = emptyList(),
     
     @SerializedName("correctAnswer")
     val correctAnswer: Int? = null, // null when fetched by student (hidden)
@@ -22,7 +22,20 @@ data class MCQuestion(
     val explanation: String? = null,
     
     @SerializedName("points")
-    val points: Int = 1
+    val points: Int = 1,
+
+    // Writing/Speaking fields
+    @SerializedName("prompt")
+    val prompt: String? = null,
+
+    @SerializedName("referenceText")
+    val referenceText: String? = null,
+
+    @SerializedName("minWords")
+    val minWords: Int? = null,
+
+    @SerializedName("maxWords")
+    val maxWords: Int? = null
 )
 
 /**
@@ -72,7 +85,26 @@ data class Test(
     val lastAttempt: LastAttemptInfo? = null,
     
     @SerializedName("createdAt")
-    val createdAt: String? = null
+    val createdAt: String? = null,
+
+    // Skill type fields
+    @SerializedName("skillType")
+    val skillType: String? = null, // reading, listening, writing, speaking
+
+    @SerializedName("audioUrl")
+    val audioUrl: String? = null,
+
+    @SerializedName("audioTranscript")
+    val audioTranscript: String? = null,
+
+    @SerializedName("passage")
+    val passage: String? = null,
+
+    @SerializedName("speakingPrompt")
+    val speakingPrompt: String? = null,
+
+    @SerializedName("maxRecordingTime")
+    val maxRecordingTime: Int? = null
 )
 
 /**
@@ -127,13 +159,36 @@ data class TestAttempt(
     val submittedAt: String? = null,
     
     @SerializedName("gradedAt")
-    val gradedAt: String? = null
+    val gradedAt: String? = null,
+
+    // Writing fields
+    @SerializedName("writingResponse")
+    val writingResponse: String? = null,
+
+    // Speaking fields
+    @SerializedName("transcription")
+    val transcription: String? = null,
+
+    @SerializedName("recordingUrl")
+    val recordingUrl: String? = null,
+
+    // AI Grading (generic map for flexibility)
+    @SerializedName("aiGrading")
+    val aiGrading: Map<String, Any>? = null
 )
 
 /**
- * Submit test request body
+ * Submit MC test request body
  */
 data class SubmitTestRequest(
     @SerializedName("answers")
     val answers: List<Int>
+)
+
+/**
+ * Submit writing test request body
+ */
+data class SubmitWritingRequest(
+    @SerializedName("writingResponse")
+    val writingResponse: String
 )

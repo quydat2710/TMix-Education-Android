@@ -84,7 +84,7 @@ sealed class BottomNavItem(
         Icons.Filled.Home, Icons.Outlined.Home
     )
     data object ParentChildren : BottomNavItem(
-        Screen.ParentChildren.route, "Con của tôi",
+        Screen.ParentChildren.route, "Con tôi",
         Icons.Filled.People, Icons.Outlined.People
     )
     data object ParentPayments : BottomNavItem(

@@ -185,15 +185,28 @@ fun RealTestCard(test: Test, onStartTest: () -> Unit = {}) {
             Spacer(Modifier.height(12.dp))
             
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                // Skill type badge
+                val skillLabel = when (test.skillType) {
+                    "listening" -> "🎧 Nghe"
+                    "writing" -> "✍️ Viết"
+                    "speaking" -> "🎤 Nói"
+                    else -> "📖 Đọc"
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(skillLabel, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = TMixNavy)
+                }
+                
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Timer, null, Modifier.size(14.dp), tint = TextSecondary)
                     Spacer(Modifier.width(4.dp))
                     Text("${test.duration} phút", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Quiz, null, Modifier.size(14.dp), tint = TextSecondary)
-                    Spacer(Modifier.width(4.dp))
-                    Text("${test.questionCount} câu", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                if (test.skillType != "writing" && test.skillType != "speaking") {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Quiz, null, Modifier.size(14.dp), tint = TextSecondary)
+                        Spacer(Modifier.width(4.dp))
+                        Text("${test.questionCount} câu", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                    }
                 }
                 if (test.teacherName != null) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
