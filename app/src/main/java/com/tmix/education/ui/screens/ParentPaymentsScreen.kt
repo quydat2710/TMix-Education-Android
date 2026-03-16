@@ -304,8 +304,10 @@ fun PaymentQRSheetContent(payment: Payment, viewModel: ParentDashboardViewModel,
     var qrDescription by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
+    var paymentConfirmed by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    // Load QR code from backend
     LaunchedEffect(payment.id) {
         isLoading = true
         error = null
@@ -323,6 +325,31 @@ fun PaymentQRSheetContent(payment: Payment, viewModel: ParentDashboardViewModel,
         } catch (e: Exception) {
             qrUrl = "https://qr.sepay.vn/img?bank=MB&acc=0346857241&amount=$amount&des=TMIX ${payment.id}&template=compact"
             isLoading = false
+        }
+    }
+
+    // Auto-poll payment status every 5 seconds
+    LaunchedEffect(payment.id) {
+        while (!paymentConfirmed) {
+            kotlinx.coroutines.delay(5000)
+            try {
+                val result = viewModel.getChildPayments(payment.student?.id ?: "")
+                result.onSuccess { payments ->
+                    val matched = payments.find { it.id == payment.id }
+                    if (matched != null && matched.isPaid) {
+                        paymentConfirmed = true
+                    }
+                }
+            } catch (_: Exception) { }
+        }
+    }
+
+    // Auto-close after confirmed
+    LaunchedEffect(paymentConfirmed) {
+        if (paymentConfirmed) {
+            kotlinx.coroutines.delay(2500)
+            viewModel.refresh()
+            onClose()
         }
     }
 
@@ -348,7 +375,21 @@ fun PaymentQRSheetContent(payment: Payment, viewModel: ParentDashboardViewModel,
 
         Spacer(Modifier.height(16.dp))
 
-        if (isLoading) {
+        if (paymentConfirmed) {
+            // Success state
+            Card(shape = TMixShapes.Card, colors = CardDefaults.cardColors(containerColor = SuccessLight)) {
+                Column(
+                    Modifier.padding(32.dp).fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(Icons.Default.CheckCircle, null, Modifier.size(64.dp), tint = Success)
+                    Spacer(Modifier.height(12.dp))
+                    Text("Thanh toán thành công!", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Success)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Hóa đơn đã được xác nhận tự động", style = MaterialTheme.typography.bodySmall, color = Success.copy(0.8f))
+                }
+            }
+        } else if (isLoading) {
             Box(Modifier.size(250.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = TMixRed)
             }
@@ -369,9 +410,15 @@ fun PaymentQRSheetContent(payment: Payment, viewModel: ParentDashboardViewModel,
 
         Spacer(Modifier.height(8.dp))
 
-        Text("Mở app ngân hàng và quét mã QR để thanh toán", style = MaterialTheme.typography.bodyMedium, color = TextSecondary, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(4.dp))
-        Text("Thanh toán sẽ được xác nhận tự động", style = MaterialTheme.typography.labelSmall, color = Success)
+        if (!paymentConfirmed) {
+            Text("Mở app ngân hàng và quét mã QR để thanh toán", style = MaterialTheme.typography.bodyMedium, color = TextSecondary, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(8.dp))
+            // Waiting indicator
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp, color = Warning)
+                Text("Đang chờ thanh toán...", style = MaterialTheme.typography.labelSmall, color = Warning)
+            }
+        }
 
         Spacer(Modifier.height(32.dp))
     }

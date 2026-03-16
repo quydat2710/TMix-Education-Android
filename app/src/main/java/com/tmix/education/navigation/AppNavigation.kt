@@ -38,8 +38,8 @@ fun AppNavigation() {
                         currentDestination?.route?.startsWith("parent/") == true) &&
                         hideBottomBarRoutes.none { currentDestination?.route?.contains(it) == true }
     
-    val isStudent = currentDestination?.route?.startsWith("student/") == true
-    val bottomNavItems = if (isStudent) BottomNavItem.studentItems else BottomNavItem.parentItems
+    val isStudentUser = currentUser?.isStudent ?: true
+    val bottomNavItems = if (isStudentUser) BottomNavItem.studentItems else BottomNavItem.parentItems
     
     Scaffold(
         bottomBar = {
@@ -205,6 +205,8 @@ fun AppNavigation() {
             }
             
             composable(Screen.ParentPayments.route) { ParentPaymentsScreen() }
+            
+            composable(Screen.ParentSchedule.route) { StudentScheduleScreen() }
             
             composable(Screen.ParentProfile.route) { 
                 ProfileScreen(

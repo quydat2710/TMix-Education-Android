@@ -30,6 +30,7 @@ sealed class Screen(val route: String) {
     // Parent
     data object ParentDashboard : Screen("parent/dashboard")
     data object ParentChildren : Screen("parent/children")
+    data object ParentSchedule : Screen("parent/schedule")
     data object ParentPayments : Screen("parent/payments")
     data object ParentProfile : Screen("parent/profile")
     
@@ -90,6 +91,10 @@ sealed class BottomNavItem(
         Screen.ParentPayments.route, "Học phí",
         Icons.Filled.Payment, Icons.Outlined.Payment
     )
+    data object ParentSchedule : BottomNavItem(
+        Screen.ParentSchedule.route, "Lịch học",
+        Icons.Filled.CalendarMonth, Icons.Outlined.CalendarMonth
+    )
     data object ParentProfile : BottomNavItem(
         Screen.ParentProfile.route, "Tài khoản",
         Icons.Filled.Person, Icons.Outlined.Person
@@ -97,6 +102,6 @@ sealed class BottomNavItem(
     
     companion object {
         val studentItems = listOf(StudentHome, StudentClasses, StudentSchedule, StudentTests, StudentProfile)
-        val parentItems = listOf(ParentHome, ParentChildren, ParentPayments, ParentProfile)
+        val parentItems = listOf(ParentHome, ParentChildren, ParentSchedule, ParentPayments, ParentProfile)
     }
 }

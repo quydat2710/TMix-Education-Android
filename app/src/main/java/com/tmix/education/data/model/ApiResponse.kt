@@ -20,15 +20,23 @@ data class ApiResponse<T>(
  * Paginated response wrapper
  */
 data class PaginatedResponse<T>(
-    @SerializedName("data")
+    @SerializedName("result")
     val data: List<T>,
     
-    @SerializedName("total")
-    val total: Int,
-    
+    @SerializedName("meta")
+    val meta: PaginationMeta? = null
+)
+
+data class PaginationMeta(
     @SerializedName("page")
-    val page: Int,
+    val page: Int = 1,
     
     @SerializedName("limit")
-    val limit: Int
+    val limit: Int = 10,
+    
+    @SerializedName("totalPages")
+    val totalPages: Int = 1,
+    
+    @SerializedName("totalItems")
+    val totalItems: Int = 0
 )

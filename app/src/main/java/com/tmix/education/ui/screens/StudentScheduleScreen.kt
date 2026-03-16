@@ -37,7 +37,8 @@ data class ScheduleEvent(
     val endTime: String,
     val room: String,
     val teacher: String,
-    val color: Color
+    val color: Color,
+    val studentName: String? = null
 )
 
 /**
@@ -50,7 +51,7 @@ fun StudentScheduleScreen() {
     val authRepository = remember { AuthRepository() }
     val studentRepository = remember { StudentRepository() }
     
-    var classes by remember { mutableStateOf<List<StudentClassInfo>>(emptyList()) }
+    var classes by remember { mutableStateOf<List<Pair<String?, StudentClassInfo>>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     
@@ -65,6 +66,8 @@ fun StudentScheduleScreen() {
     
     val scope = rememberCoroutineScope()
     
+    val parentRepository = remember { com.tmix.education.data.repository.ParentRepository() }
+    
     // Load student's enrolled classes
     LaunchedEffect(Unit) {
         scope.launch {
@@ -72,11 +75,28 @@ fun StudentScheduleScreen() {
             error = null
             val userId = authRepository.getCurrentUserId()
             if (userId != null) {
-                val result = studentRepository.getStudent(userId)
-                result.onSuccess { student ->
-                    classes = student.classes ?: emptyList()
-                }.onFailure { e ->
-                    error = e.message ?: "Không thể tải lịch học"
+                if (authRepository.isParent()) {
+                    // Parent: load children and merge their classes
+                    val parentResult = parentRepository.getParent(userId)
+                    parentResult.onSuccess { parent ->
+                        val allClasses = mutableListOf<Pair<String?, StudentClassInfo>>()
+                        parent.students?.forEach { student ->
+                            student.classes?.filter { it.classInfo.status == "active" }?.forEach { classInfo ->
+                                allClasses.add(Pair(student.name, classInfo))
+                            }
+                        }
+                        classes = allClasses
+                    }.onFailure { e ->
+                        error = e.message ?: "Không thể tải lịch học"
+                    }
+                } else {
+                    // Student: load own classes
+                    val result = studentRepository.getStudent(userId)
+                    result.onSuccess { student ->
+                        classes = student.classes?.filter { it.classInfo.status == "active" }?.map { Pair(null, it) } ?: emptyList()
+                    }.onFailure { e ->
+                        error = e.message ?: "Không thể tải lịch học"
+                    }
                 }
             } else {
                 error = "Chưa đăng nhập"
@@ -118,7 +138,7 @@ fun StudentScheduleScreen() {
         weekDays.forEach { date ->
             val eventsForDay = mutableListOf<ScheduleEvent>()
             
-            classes.forEachIndexed { index, enrollment ->
+            classes.forEachIndexed { index, (studentName, enrollment) ->
                 val classInfo = enrollment.classInfo
                 val schedule = classInfo.schedule
                 
@@ -128,13 +148,14 @@ fun StudentScheduleScreen() {
                     if (date.dayOfWeek in classDays) {
                         eventsForDay.add(
                             ScheduleEvent(
-                                id = classInfo.id,
+                                id = classInfo.id + (studentName ?: ""),
                                 className = classInfo.name,
                                 startTime = schedule.timeSlots?.startTime ?: "",
                                 endTime = schedule.timeSlots?.endTime ?: "",
                                 room = classInfo.room ?: "Chưa có phòng",
                                 teacher = classInfo.teacher?.name ?: "Chưa phân công",
-                                color = eventColors[index % eventColors.size]
+                                color = eventColors[index % eventColors.size],
+                                studentName = studentName
                             )
                         )
                     }
@@ -356,7 +377,7 @@ fun ScheduleEventCard(event: ScheduleEvent) {
             Box(
                 Modifier
                     .width(4.dp)
-                    .height(100.dp)
+                    .height(if (event.studentName != null) 120.dp else 100.dp)
                     .background(event.color)
             )
 
@@ -391,6 +412,21 @@ fun ScheduleEventCard(event: ScheduleEvent) {
                         Icon(Icons.Default.Room, null, Modifier.size(14.dp), tint = TextSecondary)
                         Spacer(Modifier.width(4.dp))
                         Text(event.room, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                    }
+                }
+
+                // Show child name for parent view
+                if (event.studentName != null) {
+                    Spacer(Modifier.height(6.dp))
+                    Surface(color = event.color.copy(0.1f), shape = TMixShapes.Chip) {
+                        Row(
+                            Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Face, null, Modifier.size(14.dp), tint = event.color)
+                            Spacer(Modifier.width(4.dp))
+                            Text(event.studentName, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = event.color)
+                        }
                     }
                 }
             }
