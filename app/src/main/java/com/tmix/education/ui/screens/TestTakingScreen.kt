@@ -712,7 +712,10 @@ fun SpeakingTestContent(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFF0FDF4))
                 ) {
                     Column(Modifier.padding(16.dp)) {
-                        Text("📝 Đề bài:", fontWeight = FontWeight.Bold, color = Color(0xFF15803D))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("📝 Đề bài:", fontWeight = FontWeight.Bold, color = Color(0xFF15803D), modifier = Modifier.weight(1f))
+                            TTSButton(text = question.prompt ?: "", tint = Color(0xFF15803D))
+                        }
                         Spacer(Modifier.height(4.dp))
                         Text(question.prompt, color = Color(0xFF166534))
                     }
@@ -728,7 +731,10 @@ fun SpeakingTestContent(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF))
                 ) {
                     Column(Modifier.padding(16.dp)) {
-                        Text("📖 Đoạn văn tham khảo:", fontWeight = FontWeight.Bold, color = Color(0xFF1E40AF))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("📖 Đoạn văn tham khảo:", fontWeight = FontWeight.Bold, color = Color(0xFF1E40AF), modifier = Modifier.weight(1f))
+                            TTSButton(text = question.referenceText ?: "", tint = Color(0xFF1E40AF))
+                        }
                         Spacer(Modifier.height(4.dp))
                         Text(question.referenceText, color = Color(0xFF1E3A5A), lineHeight = 22.sp)
                     }
