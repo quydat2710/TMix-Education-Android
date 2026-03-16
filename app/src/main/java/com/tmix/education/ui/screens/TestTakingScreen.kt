@@ -36,6 +36,7 @@ import com.tmix.education.ui.viewmodel.TestDetailState
 import com.tmix.education.ui.viewmodel.TestViewModel
 import kotlinx.coroutines.delay
 import java.io.File
+import com.tmix.education.ui.components.TTSButton
 
 /**
  * Test Taking Screen - supports MC, Listening, Writing, Speaking
@@ -370,11 +371,17 @@ fun MCTestContent(
             
             Spacer(Modifier.height(8.dp))
             
-            Text(
-                question.question,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    question.question,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
+                )
+                TTSButton(
+                    text = "${question.question}. ${question.options.mapIndexed { i, opt -> "${('A' + i)}: $opt" }.joinToString(". ")}"
+                )
+            }
             
             Spacer(Modifier.height(24.dp))
             
