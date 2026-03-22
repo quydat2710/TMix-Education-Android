@@ -22,15 +22,16 @@ object ApiConfig {
     
     // For physical device - use your computer's local IP
     // Find your IP: Windows -> ipconfig, Mac/Linux -> ifconfig
-    private const val BASE_URL_PHYSICAL_DEVICE = "http://192.168.0.100:8080/api/v1/"
+    private const val BASE_URL_PHYSICAL_DEVICE = "http://192.168.1.145:8080/api/v1/"
     
-    // TODO: Replace with production URL when available
-    private const val BASE_URL_PRODUCTION = "https://api.tmix.education/api/v1/"
+    // Production URL
+    private const val BASE_URL_PRODUCTION = "https://tmixeducation.id.vn/api/v1/"
     
     // Current active URL - CHANGE THIS based on how you're testing
     // Use BASE_URL_EMULATOR for Android Emulator
     // Use BASE_URL_PHYSICAL_DEVICE for physical phone on same WiFi
-    var BASE_URL = BASE_URL_PHYSICAL_DEVICE
+    // Use BASE_URL_PRODUCTION for deployed server
+    var BASE_URL = BASE_URL_PRODUCTION
         private set
     
     private var retrofit: Retrofit? = null
