@@ -38,6 +38,18 @@ sealed class SubmitState {
     data class Error(val message: String) : SubmitState()
 }
 
+sealed class AttemptHistoryState {
+    object Loading : AttemptHistoryState()
+    data class Success(val attempts: List<TestAttempt>) : AttemptHistoryState()
+    data class Error(val message: String) : AttemptHistoryState()
+}
+
+sealed class AttemptDetailState {
+    object Loading : AttemptDetailState()
+    data class Success(val attempt: TestAttempt) : AttemptDetailState()
+    data class Error(val message: String) : AttemptDetailState()
+}
+
 /**
  * ViewModel for Student Test functionality
  */
@@ -61,6 +73,14 @@ class TestViewModel : ViewModel() {
     private val _attemptsState = MutableStateFlow<TestListState>(TestListState.Loading)
     val attemptsState: StateFlow<TestListState> = _attemptsState.asStateFlow()
     
+    // Attempt history for chart
+    private val _attemptHistoryState = MutableStateFlow<AttemptHistoryState>(AttemptHistoryState.Loading)
+    val attemptHistoryState: StateFlow<AttemptHistoryState> = _attemptHistoryState.asStateFlow()
+    
+    // Attempt detail
+    private val _attemptDetailState = MutableStateFlow<AttemptDetailState>(AttemptDetailState.Loading)
+    val attemptDetailState: StateFlow<AttemptDetailState> = _attemptDetailState.asStateFlow()
+    
     /**
      * Load available tests for student
      */
@@ -79,6 +99,58 @@ class TestViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 _testsState.value = TestListState.Error(
+                    e.message ?: "Lỗi kết nối"
+                )
+            }
+        }
+    }
+    
+    /**
+     * Load attempt history for chart display
+     */
+    fun loadAttemptHistory() {
+        viewModelScope.launch {
+            _attemptHistoryState.value = AttemptHistoryState.Loading
+            try {
+                val response = apiService.getMyAttempts(page = 1, limit = 50)
+                if (response.isSuccessful) {
+                    val attempts = response.body()?.data?.data ?: emptyList()
+                    _attemptHistoryState.value = AttemptHistoryState.Success(attempts)
+                } else {
+                    _attemptHistoryState.value = AttemptHistoryState.Error(
+                        response.body()?.message ?: "Không thể tải lịch sử bài thi"
+                    )
+                }
+            } catch (e: Exception) {
+                _attemptHistoryState.value = AttemptHistoryState.Error(
+                    e.message ?: "Lỗi kết nối"
+                )
+            }
+        }
+    }
+    
+    /**
+     * Load attempt detail by ID
+     */
+    fun loadAttemptDetail(attemptId: String) {
+        viewModelScope.launch {
+            _attemptDetailState.value = AttemptDetailState.Loading
+            try {
+                val response = apiService.getAttemptResult(attemptId)
+                if (response.isSuccessful) {
+                    val attempt = response.body()?.data
+                    if (attempt != null) {
+                        _attemptDetailState.value = AttemptDetailState.Success(attempt)
+                    } else {
+                        _attemptDetailState.value = AttemptDetailState.Error("Không tìm thấy kết quả")
+                    }
+                } else {
+                    _attemptDetailState.value = AttemptDetailState.Error(
+                        response.body()?.message ?: "Không thể tải chi tiết bài thi"
+                    )
+                }
+            } catch (e: Exception) {
+                _attemptDetailState.value = AttemptDetailState.Error(
                     e.message ?: "Lỗi kết nối"
                 )
             }

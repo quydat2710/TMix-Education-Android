@@ -25,6 +25,7 @@ import com.tmix.education.ui.viewmodel.TestViewModel
 @Composable
 fun StudentTestsScreen(
     onStartTest: (String) -> Unit = {},
+    onTestResults: () -> Unit = {},
     testViewModel: TestViewModel = viewModel()
 ) {
     var selectedTab by remember { mutableStateOf(0) }
@@ -40,7 +41,16 @@ fun StudentTestsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Bài kiểm tra", fontWeight = FontWeight.Bold) }
+                title = { Text("Bài kiểm tra", fontWeight = FontWeight.Bold) },
+                actions = {
+                    IconButton(onClick = onTestResults) {
+                        Icon(
+                            Icons.Default.Assessment,
+                            contentDescription = "Kết quả học tập",
+                            tint = TMixNavy
+                        )
+                    }
+                }
             )
         }
     ) { padding ->
@@ -156,24 +166,32 @@ fun RealTestCard(test: Test, onStartTest: () -> Unit = {}) {
                 }
                 
                 if (test.hasAttempted && test.lastAttempt != null) {
-                    Surface(
-                        color = if (test.lastAttempt.passed) SuccessLight else ErrorLight,
-                        shape = TMixShapes.Chip
-                    ) {
-                        Row(Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                if (test.lastAttempt.passed) Icons.Default.CheckCircle else Icons.Default.Cancel,
-                                null, Modifier.size(14.dp),
-                                tint = if (test.lastAttempt.passed) Success else Error
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                "${test.lastAttempt.percentage.toInt()}%",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = if (test.lastAttempt.passed) Success else Error
-                            )
+                    Column(horizontalAlignment = Alignment.End) {
+                        Surface(
+                            color = if (test.lastAttempt.passed) SuccessLight else ErrorLight,
+                            shape = TMixShapes.Chip
+                        ) {
+                            Row(Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    if (test.lastAttempt.passed) Icons.Default.CheckCircle else Icons.Default.Cancel,
+                                    null, Modifier.size(14.dp),
+                                    tint = if (test.lastAttempt.passed) Success else Error
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    "${test.lastAttempt.percentage.toInt()}%",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (test.lastAttempt.passed) Success else Error
+                                )
+                            }
                         }
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            "Kết quả gần nhất",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextSecondary
+                        )
                     }
                 } else {
                     Surface(color = InfoLight, shape = TMixShapes.Chip) {

@@ -27,9 +27,4 @@ data class MaterialsResponse(
     val result: List<Material> = emptyList()
 )
 
-data class PaginationMeta(
-    val page: Int = 1,
-    val limit: Int = 20,
-    val totalItems: Int = 0,
-    val totalPages: Int = 0
-)
+

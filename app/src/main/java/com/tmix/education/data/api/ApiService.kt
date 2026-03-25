@@ -320,7 +320,7 @@ interface ApiService {
     suspend fun getMyAttempts(
         @Query("page") page: Int = 1,
         @Query("limit") limit: Int = 10
-    ): Response<ApiResponse<List<TestAttempt>>>
+    ): Response<ApiResponse<PaginatedResponse<TestAttempt>>>
     
     /**
      * Get attempt result by ID

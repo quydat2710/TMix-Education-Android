@@ -53,7 +53,7 @@ fun AppNavigation() {
     
     val hideBottomBarRoutes = listOf(
         "splash", "login", "forgot-password",
-        "student/class/", "student/test/", "student/chatbot",
+        "student/class/", "student/test/", "student/chatbot", "student/test-results", "student/attempt/",
         "parent/child/",
         "notifications", "profile/edit", "profile/password", "help",
         "courses"
@@ -174,7 +174,8 @@ fun AppNavigation() {
             
             composable(Screen.StudentTests.route) { 
                 StudentTestsScreen(
-                    onStartTest = { testId -> navController.navigate(Screen.TestTaking.createRoute(testId)) }
+                    onStartTest = { testId -> navController.navigate(Screen.TestTaking.createRoute(testId)) },
+                    onTestResults = { navController.navigate(Screen.StudentTestResults.route) }
                 )
             }
             
@@ -184,6 +185,22 @@ fun AppNavigation() {
             
             composable(Screen.StudentMaterials.route) {
                 MaterialsScreen(onBack = { navController.popBackStack() })
+            }
+            
+            composable(Screen.StudentTestResults.route) {
+                TestResultsChartScreen(
+                    onBack = { navController.popBackStack() },
+                    onAttemptClick = { attemptId -> navController.navigate(Screen.AttemptDetail.createRoute(attemptId)) }
+                )
+            }
+            
+            composable(Screen.AttemptDetail.route) { backStackEntry ->
+                val attemptId = backStackEntry.arguments?.getString("attemptId") ?: ""
+                AttemptDetailScreen(
+                    attemptId = attemptId,
+                    onBack = { navController.popBackStack() },
+                    onRetake = { testId -> navController.navigate(Screen.TestTaking.createRoute(testId)) }
+                )
             }
             
             composable(Screen.StudentProfile.route) { 
