@@ -14,11 +14,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tmix.education.ui.theme.*
 import com.tmix.education.ui.viewmodel.StudentDashboardViewModel
+import com.tmix.education.ui.viewmodel.NotificationViewModel
 import com.tmix.education.ui.components.BannerCarousel
+import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
  * Student Dashboard Screen
@@ -28,11 +31,29 @@ import com.tmix.education.ui.components.BannerCarousel
 @Composable
 fun StudentDashboardScreen(
     viewModel: StudentDashboardViewModel = viewModel(),
+    notificationViewModel: NotificationViewModel? = null,
     onNotificationClick: () -> Unit = {},
     onClassClick: (String) -> Unit = {},
+    onCourseClick: () -> Unit = {},
+    onMaterialsClick: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
+    val unreadCount by (notificationViewModel?.unreadCount ?: MutableStateFlow(0)).collectAsState()
+    val showSnackbar by (notificationViewModel?.showSnackbar ?: MutableStateFlow(false)).collectAsState()
+    val latestNotification by (notificationViewModel?.latestNotification ?: MutableStateFlow(null)).collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    // Show Snackbar when new notification arrives
+    LaunchedEffect(showSnackbar, latestNotification) {
+        if (showSnackbar && latestNotification != null) {
+            snackbarHostState.showSnackbar(
+                message = "${latestNotification!!.title}: ${latestNotification!!.message}",
+                duration = SnackbarDuration.Short
+            )
+            notificationViewModel?.dismissSnackbar()
+        }
+    }
     
     // Pull-to-refresh state
     var isRefreshing by remember { mutableStateOf(false) }
@@ -42,6 +63,7 @@ fun StudentDashboardScreen(
     }
     
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -49,22 +71,31 @@ fun StudentDashboardScreen(
                         Text("TMIX", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TMixRed)
                         Text(
                             text = "Xin chào, ${state.user?.name ?: state.student?.name ?: "Học sinh"}!",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.SemiBold
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1
                         )
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNotificationClick) {
-                        Badge(containerColor = TMixRed) {
+                    IconButton(onClick = {
+                        onNotificationClick()
+                        notificationViewModel?.refreshUnreadCount()
+                    }) {
+                        BadgedBox(
+                            badge = {
+                                if (unreadCount > 0) {
+                                    Badge(containerColor = TMixRed) {
+                                        Text(
+                                            text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    }
+                                }
+                            }
+                        ) {
                             Icon(Icons.Filled.Notifications, "Thông báo")
                         }
-                    }
-                    IconButton(onClick = {
-                        viewModel.logout()
-                        onLogout()
-                    }) {
-                        Icon(Icons.Filled.Logout, "Đăng xuất")
                     }
                 }
             )
@@ -204,16 +235,35 @@ fun StudentDashboardScreen(
                     }
                 }
                 
-                // Refresh button
+                // Quick actions
                 item {
-                    OutlinedButton(
-                        onClick = { viewModel.refresh() },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !state.isLoading
-                    ) {
-                        Icon(Icons.Filled.Refresh, null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Làm mới dữ liệu")
+                    Text("Thao tác nhanh", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                }
+                
+                item {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        OutlinedButton(
+                            onClick = onCourseClick,
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TMixNavy),
+                            modifier = Modifier.weight(1f).height(48.dp),
+                            shape = TMixShapes.Button,
+                            contentPadding = PaddingValues(horizontal = 12.dp)
+                        ) {
+                            Icon(Icons.Filled.School, null, Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Khóa học", fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
+                        }
+                        OutlinedButton(
+                            onClick = onMaterialsClick,
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TMixNavy),
+                            modifier = Modifier.weight(1f).height(48.dp),
+                            shape = TMixShapes.Button,
+                            contentPadding = PaddingValues(horizontal = 12.dp)
+                        ) {
+                            Icon(Icons.Filled.MenuBook, null, Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("Tài liệu", fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
+                        }
                     }
                 }
             }

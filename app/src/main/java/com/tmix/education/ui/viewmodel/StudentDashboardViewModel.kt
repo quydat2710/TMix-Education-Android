@@ -61,21 +61,32 @@ class StudentDashboardViewModel(
                     classes = student.classes ?: emptyList()
                 )
                 
-                // Calculate progress for each class from sessions
+                // Calculate progress for each class from schedule dates
                 val progressMap = mutableMapOf<String, Float>()
+                val now = System.currentTimeMillis()
+                val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                
                 student.classes?.forEach { enrollment ->
-                    enrollment.classInfo?.id?.let { classId ->
-                        try {
-                            val sessionsResult = classRepository.getClassSessions(classId, limit = 100)
-                            sessionsResult.onSuccess { sessions ->
-                                if (sessions.isNotEmpty()) {
-                                    val completed = sessions.count { !it.isActive }
-                                    progressMap[classId] = completed.toFloat() / sessions.size
+                    enrollment.classInfo?.let { classInfo ->
+                        val classId = classInfo.id
+                        val schedule = classInfo.schedule
+                        
+                        if (schedule?.startDate != null && schedule.endDate != null) {
+                            try {
+                                val startMs = dateFormat.parse(schedule.startDate.take(10))?.time ?: now
+                                val endMs = dateFormat.parse(schedule.endDate.take(10))?.time ?: now
+                                val totalDuration = endMs - startMs
+                                
+                                if (totalDuration > 0) {
+                                    val elapsed = (now - startMs).coerceIn(0, totalDuration)
+                                    progressMap[classId] = (elapsed.toFloat() / totalDuration).coerceIn(0f, 1f)
                                 } else {
-                                    progressMap[classId] = 0f
+                                    progressMap[classId] = 1f
                                 }
+                            } catch (_: Exception) {
+                                progressMap[classId] = 0f
                             }
-                        } catch (_: Exception) {
+                        } else {
                             progressMap[classId] = 0f
                         }
                     }
@@ -135,6 +146,23 @@ class StudentDashboardViewModel(
     fun logout() {
         viewModelScope.launch {
             authRepository.logout()
+        }
+    }
+
+    /**
+     * Load learning materials for a class
+     */
+    suspend fun loadMaterials(classId: String, category: String? = null): List<Material> {
+        return try {
+            val apiService = ApiConfig.getApiService()
+            val response = apiService.getMaterials(classId, category)
+            if (response.isSuccessful) {
+                response.body()?.data?.result ?: emptyList()
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            throw e
         }
     }
 }

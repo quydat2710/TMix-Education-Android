@@ -19,7 +19,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tmix.education.data.model.Student
 import com.tmix.education.ui.theme.*
 import com.tmix.education.ui.viewmodel.ParentDashboardViewModel
+import com.tmix.education.ui.viewmodel.NotificationViewModel
 import com.tmix.education.ui.components.BannerCarousel
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -40,15 +42,33 @@ data class ParentNotification(
 @Composable
 fun ParentDashboardScreen(
     viewModel: ParentDashboardViewModel = viewModel(),
+    notificationViewModel: NotificationViewModel? = null,
     onNotificationClick: () -> Unit = {},
     onChildClick: () -> Unit = {},
-    onPaymentClick: () -> Unit = {}
+    onPaymentClick: () -> Unit = {},
+    onCourseClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val children = state.children
     val parentName = state.parent?.name ?: state.user?.name ?: "phụ huynh"
+    val unreadCount by (notificationViewModel?.unreadCount ?: MutableStateFlow(0)).collectAsState()
+    val showSnackbar by (notificationViewModel?.showSnackbar ?: MutableStateFlow(false)).collectAsState()
+    val latestNotification by (notificationViewModel?.latestNotification ?: MutableStateFlow(null)).collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    // Show Snackbar when new notification arrives
+    LaunchedEffect(showSnackbar, latestNotification) {
+        if (showSnackbar && latestNotification != null) {
+            snackbarHostState.showSnackbar(
+                message = "${latestNotification!!.title}: ${latestNotification!!.message}",
+                duration = SnackbarDuration.Short
+            )
+            notificationViewModel?.dismissSnackbar()
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -58,8 +78,24 @@ fun ParentDashboardScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNotificationClick) {
-                        Icon(Icons.Filled.Notifications, "Thông báo")
+                    IconButton(onClick = {
+                        onNotificationClick()
+                        notificationViewModel?.refreshUnreadCount()
+                    }) {
+                        BadgedBox(
+                            badge = {
+                                if (unreadCount > 0) {
+                                    Badge(containerColor = TMixRed) {
+                                        Text(
+                                            text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Filled.Notifications, "Thông báo")
+                        }
                     }
                 }
             )
@@ -208,6 +244,19 @@ fun ParentDashboardScreen(
                                 Spacer(Modifier.width(8.dp))
                                 Text("Thanh toán", fontWeight = FontWeight.SemiBold)
                             }
+                        }
+                    }
+                    
+                    item {
+                        Button(
+                            onClick = onCourseClick,
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = TMixNavy),
+                            shape = TMixShapes.Button
+                        ) {
+                            Icon(Icons.Filled.School, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Đăng ký khóa học mới", fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }

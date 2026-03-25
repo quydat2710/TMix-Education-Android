@@ -2,6 +2,7 @@ package com.tmix.education
 
 import android.app.Application
 import com.tmix.education.data.api.ApiConfig
+import com.tmix.education.util.NotificationHelper
 
 /**
  * TMIX Education Application
@@ -14,5 +15,8 @@ class TMixApplication : Application() {
         
         // Initialize API configuration with application context
         ApiConfig.init(this, isProduction = false)
+        
+        // Create notification channel for system notifications
+        NotificationHelper.createNotificationChannel(this)
     }
 }

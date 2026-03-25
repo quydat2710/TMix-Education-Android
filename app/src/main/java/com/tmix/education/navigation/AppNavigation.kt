@@ -40,11 +40,13 @@ import androidx.navigation.navArgument
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tmix.education.ui.screens.*
 import com.tmix.education.ui.viewmodel.LoginViewModel
+import com.tmix.education.ui.viewmodel.NotificationViewModel
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
     val loginViewModel: LoginViewModel = viewModel()
+    val notificationViewModel: NotificationViewModel = viewModel()
     val currentUser = loginViewModel.getCurrentUser()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -53,7 +55,8 @@ fun AppNavigation() {
         "splash", "login", "forgot-password",
         "student/class/", "student/test/", "student/chatbot",
         "parent/child/",
-        "notifications", "profile/edit", "profile/password", "help"
+        "notifications", "profile/edit", "profile/password", "help",
+        "courses"
     )
     val showBottomBar = (currentDestination?.route?.startsWith("student/") == true ||
                         currentDestination?.route?.startsWith("parent/") == true) &&
@@ -153,8 +156,11 @@ fun AppNavigation() {
             // ===== STUDENT SCREENS =====
             composable(Screen.StudentDashboard.route) { 
                 StudentDashboardScreen(
+                    notificationViewModel = notificationViewModel,
                     onNotificationClick = { navController.navigate(Screen.Notifications.route) },
-                    onClassClick = { classId -> navController.navigate(Screen.ClassDetail.createRoute(classId)) }
+                    onClassClick = { classId -> navController.navigate(Screen.ClassDetail.createRoute(classId)) },
+                    onCourseClick = { navController.navigate(Screen.CourseList.route) },
+                    onMaterialsClick = { navController.navigate(Screen.StudentMaterials.route) }
                 )
             }
             
@@ -174,6 +180,10 @@ fun AppNavigation() {
             
             composable(Screen.StudentChatbot.route) {
                 ChatbotScreen(onBack = { navController.popBackStack() })
+            }
+            
+            composable(Screen.StudentMaterials.route) {
+                MaterialsScreen(onBack = { navController.popBackStack() })
             }
             
             composable(Screen.StudentProfile.route) { 
@@ -219,9 +229,11 @@ fun AppNavigation() {
             // ===== PARENT SCREENS =====
             composable(Screen.ParentDashboard.route) { 
                 ParentDashboardScreen(
+                    notificationViewModel = notificationViewModel,
                     onNotificationClick = { navController.navigate(Screen.Notifications.route) },
                     onChildClick = { navController.navigate(Screen.ParentChildren.route) },
-                    onPaymentClick = { navController.navigate(Screen.ParentPayments.route) }
+                    onPaymentClick = { navController.navigate(Screen.ParentPayments.route) },
+                    onCourseClick = { navController.navigate(Screen.CourseList.route) }
                 )
             }
             
@@ -297,6 +309,31 @@ fun AppNavigation() {
                 ParentChildDetailScreen(
                     childId = childId,
                     onBack = { navController.popBackStack() }
+                )
+            }
+            
+            // ===== COURSE SCREENS =====
+            composable(Screen.CourseList.route) {
+                CourseListScreen(
+                    onBack = { navController.popBackStack() },
+                    onRegister = { classId ->
+                        navController.navigate(Screen.CourseRegistration.createRoute(classId))
+                    }
+                )
+            }
+            
+            composable(
+                Screen.CourseRegistration.route,
+                arguments = listOf(navArgument("classId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val classId = backStackEntry.arguments?.getString("classId") ?: ""
+                CourseRegistrationScreen(
+                    classId = classId,
+                    onBack = { navController.popBackStack() },
+                    onSuccess = {
+                        // Go back to course list after success
+                        navController.popBackStack(Screen.CourseList.route, inclusive = false)
+                    }
                 )
             }
             }

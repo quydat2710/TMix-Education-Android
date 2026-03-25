@@ -19,6 +19,7 @@ sealed class Screen(val route: String) {
     data object StudentTests : Screen("student/tests")
     data object StudentProfile : Screen("student/profile")
     data object StudentChatbot : Screen("student/chatbot")
+    data object StudentMaterials : Screen("student/materials")
     
     // Student Detail Screens
     data object ClassDetail : Screen("student/class/{classId}") {
@@ -41,6 +42,12 @@ sealed class Screen(val route: String) {
     data object ChangePassword : Screen("profile/password")
     data object HelpCenter : Screen("help")
     data object ForgotPassword : Screen("forgot-password")
+    
+    // Courses (public)
+    data object CourseList : Screen("courses")
+    data object CourseRegistration : Screen("courses/register/{classId}") {
+        fun createRoute(classId: String) = "courses/register/$classId"
+    }
     
     // Parent Detail
     data object ParentChildDetail : Screen("parent/child/{childId}") {

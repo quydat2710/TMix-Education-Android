@@ -88,10 +88,22 @@ fun ClassDetailScreen(
     } ?: "Chưa có lịch"
     val room = classInfo?.room ?: "Chưa có phòng"
 
-    // Calculate progress from sessions
-    val totalSessions = sessions.size
-    val completedSessions = sessions.count { !it.isActive }
-    val progress = if (totalSessions > 0) completedSessions.toFloat() / totalSessions else 0f
+    // Calculate date-based progress from schedule
+    val progress = classInfo?.schedule?.let { sched ->
+        if (sched.startDate != null && sched.endDate != null) {
+            try {
+                val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+                val now = System.currentTimeMillis()
+                val startMs = dateFormat.parse(sched.startDate.take(10))?.time ?: now
+                val endMs = dateFormat.parse(sched.endDate.take(10))?.time ?: now
+                val totalDuration = endMs - startMs
+                if (totalDuration > 0) {
+                    ((now - startMs).coerceIn(0, totalDuration).toFloat() / totalDuration).coerceIn(0f, 1f)
+                } else 1f
+            } catch (_: Exception) { 0f }
+        } else 0f
+    } ?: 0f
+    val completedSessions = sessions.size
 
     Scaffold(
         topBar = {
@@ -213,9 +225,9 @@ fun ClassDetailScreen(
                                     }
                                 }
 
-                                if (totalSessions > 0) {
+                                if (completedSessions > 0 || progress > 0) {
                                     Spacer(Modifier.height(16.dp))
-                                    Text("Tiến độ: $completedSessions/$totalSessions buổi (${(progress * 100).toInt()}%)", style = MaterialTheme.typography.labelMedium, color = Color.White)
+                                    Text("Tiến độ: ${(progress * 100).toInt()}% · $completedSessions buổi đã học", style = MaterialTheme.typography.labelMedium, color = Color.White)
                                     Spacer(Modifier.height(4.dp))
                                     LinearProgressIndicator(
                                         progress = { progress },

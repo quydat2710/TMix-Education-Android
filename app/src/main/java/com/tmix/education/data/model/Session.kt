@@ -87,3 +87,39 @@ data class AttendanceStats(
     val attendanceRate: Float
         get() = if (total > 0) present.toFloat() / total else 0f
 }
+
+/**
+ * Backend response for GET /sessions/student/:studentId
+ * The backend returns pre-calculated attendance stats
+ */
+data class StudentAttendanceResponse(
+    @SerializedName("student")
+    val student: Map<String, Any>? = null,
+
+    @SerializedName("attendanceStats")
+    val attendanceStats: AttendanceStatsRaw? = null,
+
+    @SerializedName("totalRecord")
+    val totalRecord: Int = 0
+)
+
+data class AttendanceStatsRaw(
+    @SerializedName("totalSessions")
+    val totalSessions: Int = 0,
+
+    @SerializedName("presentSessions")
+    val presentSessions: Int = 0,
+
+    @SerializedName("absentSessions")
+    val absentSessions: Int = 0,
+
+    @SerializedName("lateSessions")
+    val lateSessions: Int = 0
+) {
+    fun toAttendanceStats() = AttendanceStats(
+        total = totalSessions,
+        present = presentSessions,
+        absent = absentSessions,
+        late = lateSessions
+    )
+}

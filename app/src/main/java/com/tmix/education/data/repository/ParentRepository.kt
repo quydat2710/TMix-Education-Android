@@ -59,10 +59,10 @@ class ParentRepository(
         studentRepository.getSchedule(childId)
     
     /**
-     * Get child's attendance history
+     * Get child's attendance stats
      */
-    suspend fun getChildAttendance(childId: String): Result<List<Session>> =
-        studentRepository.getAttendanceHistory(childId)
+    suspend fun getChildAttendance(childId: String): Result<AttendanceStats> =
+        studentRepository.getAttendanceStats(childId)
     
     /**
      * Get child's attendance statistics

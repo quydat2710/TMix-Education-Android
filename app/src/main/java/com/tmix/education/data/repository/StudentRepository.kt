@@ -63,50 +63,23 @@ class StudentRepository(
     }
     
     /**
-     * Get student attendance history
+     * Get student attendance from backend
+     * Backend returns pre-calculated stats, not raw session list
      */
-    suspend fun getAttendanceHistory(studentId: String): Result<List<Session>> = withContext(Dispatchers.IO) {
+    suspend fun getAttendanceStats(studentId: String): Result<AttendanceStats> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.getStudentAttendance(studentId)
             
             if (response.isSuccessful && response.body()?.data != null) {
-                Result.success(response.body()!!.data!!)
+                val body = response.body()!!.data!!
+                val stats = body.attendanceStats?.toAttendanceStats()
+                    ?: AttendanceStats()
+                Result.success(stats)
             } else {
-                Result.success(emptyList())
+                Result.success(AttendanceStats())
             }
         } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    
-    /**
-     * Calculate attendance statistics from history
-     */
-    suspend fun getAttendanceStats(studentId: String): Result<AttendanceStats> = withContext(Dispatchers.IO) {
-        try {
-            val historyResult = getAttendanceHistory(studentId)
-            
-            historyResult.map { sessions ->
-                var total = 0
-                var present = 0
-                var absent = 0
-                var late = 0
-                
-                sessions.forEach { session ->
-                    session.attendances?.forEach { attendance ->
-                        total++
-                        when (attendance.status) {
-                            AttendanceStatus.PRESENT -> present++
-                            AttendanceStatus.ABSENT -> absent++
-                            AttendanceStatus.LATE -> late++
-                        }
-                    }
-                }
-                
-                AttendanceStats(total, present, absent, late)
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
+            Result.success(AttendanceStats()) // Fallback to empty stats
         }
     }
     

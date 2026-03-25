@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "522078458632",
+    "project_id": "tmix-education",
+    "storage_bucket": "tmix-education.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:522078458632:android:4ededc2184ee1fe30e92bd",
+        "android_client_info": {
+          "package_name": "com.tmix.education"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFCYfP5IeyuwfPlEXN39Ig-yjgoHNRHkQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

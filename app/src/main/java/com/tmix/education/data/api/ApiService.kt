@@ -160,11 +160,12 @@ interface ApiService {
     /**
      * Get student attendance history
      * GET /sessions/student/:studentId
+     * Returns pre-calculated attendance stats from backend
      */
     @GET("sessions/student/{studentId}")
     suspend fun getStudentAttendance(
         @Path("studentId") studentId: String
-    ): Response<ApiResponse<List<Session>>>
+    ): Response<ApiResponse<StudentAttendanceResponse>>
     
     /**
      * Get all sessions for a class
@@ -214,18 +215,51 @@ interface ApiService {
     suspend fun getDashboard(): Response<ApiResponse<Map<String, Any>>>
     
     // =====================================================
-    // NOTIFICATIONS (if available)
+    // NOTIFICATIONS
     // =====================================================
     
     /**
-     * Get user notifications
-     * This endpoint may need to be added to Backend
+     * Get user notifications (paginated)
+     * GET /notifications
      */
     @GET("notifications")
     suspend fun getNotifications(
         @Query("page") page: Int = 1,
-        @Query("limit") limit: Int = 20
-    ): Response<ApiResponse<PaginatedResponse<Map<String, Any>>>>
+        @Query("limit") limit: Int = 20,
+        @Query("isRead") isRead: Boolean? = null
+    ): Response<ApiResponse<NotificationListResponse>>
+    
+    /**
+     * Get unread notification count
+     * GET /notifications/unread-count
+     */
+    @GET("notifications/unread-count")
+    suspend fun getUnreadCount(): Response<ApiResponse<UnreadCountResponse>>
+    
+    /**
+     * Mark a notification as read
+     * PATCH /notifications/:id/read
+     */
+    @PATCH("notifications/{id}/read")
+    suspend fun markNotificationAsRead(
+        @Path("id") notificationId: String
+    ): Response<ApiResponse<Notification>>
+    
+    /**
+     * Mark all notifications as read
+     * PATCH /notifications/read-all
+     */
+    @PATCH("notifications/read-all")
+    suspend fun markAllNotificationsAsRead(): Response<ApiResponse<Map<String, Any>>>
+    
+    /**
+     * Delete a notification
+     * DELETE /notifications/:id
+     */
+    @DELETE("notifications/{id}")
+    suspend fun deleteNotification(
+        @Path("id") notificationId: String
+    ): Response<ApiResponse<Map<String, Any>>>
     
     // =====================================================
     // TESTS (Student)
@@ -344,4 +378,46 @@ interface ApiService {
     suspend fun sendChatMessage(
         @Body request: Map<String, @JvmSuppressWildcards Any>
     ): Response<Map<String, Any>>
+    
+    // =====================================================
+    // REGISTRATIONS (Course Registration)
+    // =====================================================
+    
+    /**
+     * Submit a course registration (public - no auth required)
+     * POST /registrations
+     */
+    @POST("registrations")
+    suspend fun submitRegistration(
+        @Body request: CreateRegistrationRequest
+    ): Response<ApiResponse<Registration>>
+    
+    // =====================================================
+    // FCM DEVICE TOKEN
+    // =====================================================
+    
+    /**
+     * Register FCM device token for push notifications
+     * POST /notifications/register-device
+     */
+    @POST("notifications/register-device")
+    suspend fun registerDeviceToken(
+        @Body request: Map<String, String>
+    ): Response<ApiResponse<Unit>>
+
+    // =====================================================
+    // LEARNING MATERIALS
+    // =====================================================
+
+    /**
+     * Get learning materials by class
+     * GET /materials?classId=&category=&page=&limit=
+     */
+    @GET("materials")
+    suspend fun getMaterials(
+        @Query("classId") classId: String,
+        @Query("category") category: String? = null,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 50
+    ): Response<ApiResponse<MaterialsResponse>>
 }
