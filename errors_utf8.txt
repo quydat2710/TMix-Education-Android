@@ -1,0 +1,38 @@
+﻿e: file:///D:/Tai_lieu
+_dai_hoc_nam_V/tmix-ce
+nter-project/TMixEduca
+tion-Android/app/src/m
+ain/java/com/tmix/educ
+ation/ui/components/An
+imatedComponents.kt:22
+0:1 Conflicting 
+overloads:
+e: file:///D:/Tai_lieu
+_dai_hoc_nam_V/tmix-ce
+nter-project/TMixEduca
+tion-Android/app/src/m
+ain/java/com/tmix/educ
+ation/ui/components/An
+imatedComponents.kt:23
+8:1 Conflicting 
+overloads:
+e: file:///D:/Tai_lieu
+_dai_hoc_nam_V/tmix-ce
+nter-project/TMixEduca
+tion-Android/app/src/m
+ain/java/com/tmix/educ
+ation/ui/screens/Stude
+ntDashboardScreen.kt:1
+10:24 Overload 
+resolution ambiguity 
+between candidates:
+e: file:///D:/Tai_lieu
+_dai_hoc_nam_V/tmix-ce
+nter-project/TMixEduca
+tion-Android/app/src/m
+ain/java/com/tmix/educ
+ation/ui/screens/Stude
+ntDashboardScreen.kt:1
+11:28 Overload 
+resolution ambiguity 
+between candidates:

@@ -1,5 +1,6 @@
 package com.tmix.education.ui.screens
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardActions
@@ -10,6 +11,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -44,14 +48,40 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    
+
+    // Subtle entrance animation
+    var visible by remember { mutableStateOf(false) }
+    val logoScale by animateFloatAsState(
+        if (visible) 1f else 0.85f,
+        spring(dampingRatio = 0.6f, stiffness = 200f), label = "logo_s"
+    )
+    val logoAlpha by animateFloatAsState(
+        if (visible) 1f else 0f, tween(500), label = "logo_a"
+    )
+    val cardAlpha by animateFloatAsState(
+        if (visible) 1f else 0f, tween(400, delayMillis = 200), label = "card_a"
+    )
+    val cardOffsetY by animateFloatAsState(
+        if (visible) 0f else 30f, tween(400, delayMillis = 200, easing = FastOutSlowInEasing), label = "card_y"
+    )
+
+    // Shake on error
+    var triggerShake by remember { mutableStateOf(false) }
+    val shakeX by animateFloatAsState(
+        if (triggerShake) 1f else 0f,
+        if (triggerShake) spring(Spring.DampingRatioHighBouncy, Spring.StiffnessHigh) else tween(0),
+        label = "shake",
+        finishedListener = { triggerShake = false }
+    )
+    val shakeTranslation = if (triggerShake) kotlin.math.sin(shakeX.toDouble() * Math.PI * 6).toFloat() * 10f else 0f
+
+    LaunchedEffect(Unit) { visible = true }
+
     // Handle login state changes
     LaunchedEffect(loginState) {
-        when (val state = loginState) {
-            is LoginUiState.Success -> {
-                val isStudent = viewModel.isStudent()
-                onLoginSuccess(isStudent)
-            }
+        when (loginState) {
+            is LoginUiState.Success -> onLoginSuccess(viewModel.isStudent())
+            is LoginUiState.Error -> triggerShake = true
             else -> {}
         }
     }
@@ -81,22 +111,28 @@ fun LoginScreen(
                 text = "TMIX",
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold,
-                color = TMixRed
+                color = TMixRed,
+                modifier = Modifier.scale(logoScale).alpha(logoAlpha)
             )
             Text(
                 text = "EDUCATION",
                 style = MaterialTheme.typography.titleLarge,
                 color = Color.White,
-                letterSpacing = 4.sp
+                letterSpacing = 4.sp,
+                modifier = Modifier.scale(logoScale).alpha(logoAlpha)
             )
             
             Spacer(modifier = Modifier.height(48.dp))
             
             // Login Card
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().graphicsLayer {
+                    alpha = cardAlpha
+                    translationY = cardOffsetY
+                    translationX = shakeTranslation
+                },
                 shape = TMixShapes.Card,
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
@@ -106,7 +142,7 @@ fun LoginScreen(
                         text = "Đăng nhập",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = TMixNavy
+                        color = MaterialTheme.colorScheme.primary
                     )
                     
                     Spacer(modifier = Modifier.height(8.dp))
@@ -114,7 +150,7 @@ fun LoginScreen(
                     Text(
                         text = "Dành cho Học sinh & Phụ huynh",
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     
                     Spacer(modifier = Modifier.height(24.dp))
@@ -226,7 +262,7 @@ fun LoginScreen(
                     ) {
                         Text(
                             "Quên mật khẩu?",
-                            color = TMixNavy,
+                            color = MaterialTheme.colorScheme.primary,
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
