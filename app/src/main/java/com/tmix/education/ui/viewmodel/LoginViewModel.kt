@@ -70,9 +70,14 @@ class LoginViewModel(
     }
     
     /**
-     * Get the current logged in user
+     * Get the current logged in user (synchronous)
      */
     fun getCurrentUser(): User? = authRepository.getCurrentUser()
+    
+    /**
+     * Observe current user changes
+     */
+    val currentUserFlow = authRepository.currentUserFlow
     
     /**
      * Check if current user is student

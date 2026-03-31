@@ -38,6 +38,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.collectAsState
 import com.tmix.education.ui.screens.*
 import com.tmix.education.ui.viewmodel.LoginViewModel
 import com.tmix.education.ui.viewmodel.NotificationViewModel
@@ -47,7 +48,7 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val loginViewModel: LoginViewModel = viewModel()
     val notificationViewModel: NotificationViewModel = viewModel()
-    val currentUser = loginViewModel.getCurrentUser()
+    val currentUser by loginViewModel.currentUserFlow.collectAsState(initial = loginViewModel.getCurrentUser())
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
     

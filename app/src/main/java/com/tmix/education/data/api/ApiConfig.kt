@@ -68,16 +68,22 @@ object ApiConfig {
     private fun createAuthInterceptor(): Interceptor = Interceptor { chain ->
         val original = chain.request()
         val token = tokenManager?.getAccessTokenSync()
+        val hasContentType = original.header("Content-Type") != null
         
         val request = if (token != null) {
-            original.newBuilder()
+            val builder = original.newBuilder()
                 .header("Authorization", "Bearer $token")
-                .header("Content-Type", "application/json")
-                .build()
+            // Don't force Content-Type for multipart requests
+            if (!hasContentType) {
+                builder.header("Content-Type", "application/json")
+            }
+            builder.build()
         } else {
-            original.newBuilder()
-                .header("Content-Type", "application/json")
-                .build()
+            val builder = original.newBuilder()
+            if (!hasContentType) {
+                builder.header("Content-Type", "application/json")
+            }
+            builder.build()
         }
         
         chain.proceed(request)

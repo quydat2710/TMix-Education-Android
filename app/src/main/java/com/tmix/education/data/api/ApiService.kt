@@ -75,8 +75,29 @@ interface ApiService {
     @PATCH("students/{id}")
     suspend fun updateStudent(
         @Path("id") studentId: String,
-        @Body updates: Map<String, Any>
+        @Body updates: Map<String, @JvmSuppressWildcards Any>
     ): Response<ApiResponse<Student>>
+    
+    /**
+     * Upload avatar image URL
+     * PATCH /user/avatar
+     */
+    @PATCH("user/avatar")
+    suspend fun uploadAvatar(
+        @Body request: Map<String, String>
+    ): Response<ApiResponse<Map<String, Any>>>
+    
+    /**
+     * Upload file (multipart)
+     * POST /files
+     * Returns Cloudinary url and public_id wrapped in ApiResponse
+     */
+    @Multipart
+    @POST("files")
+    suspend fun uploadFile(
+        @Part file: okhttp3.MultipartBody.Part,
+        @Part("path") path: okhttp3.RequestBody? = null
+    ): Response<ApiResponse<Map<String, Any>>>
     
     // =====================================================
     // PARENTS

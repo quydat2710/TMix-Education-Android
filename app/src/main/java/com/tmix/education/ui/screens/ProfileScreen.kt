@@ -16,13 +16,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.tmix.education.ui.theme.*
 import com.tmix.education.data.model.User
 
 /**
  * Profile Screen (shared between Student and Parent)
+ * Now displays real avatar from user.avatar URL using Coil
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +43,7 @@ fun ProfileScreen(
     val userName = user?.name ?: if (isStudent) "Học sinh" else "Phụ huynh"
     val userRole = if (isStudent) "Học sinh" else "Phụ huynh"
     val userEmail = user?.email ?: ""
+    val avatarUrl = user?.avatar
     
     Scaffold(
         topBar = {
@@ -63,6 +67,7 @@ fun ProfileScreen(
                         Modifier.fillMaxWidth().padding(20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        // Avatar — real image or letter fallback
                         Box(
                             Modifier
                                 .size(72.dp)
@@ -70,12 +75,21 @@ fun ProfileScreen(
                                 .background(TMixRed),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                userName.split(" ").lastOrNull()?.firstOrNull()?.toString() ?: "?",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                            if (!avatarUrl.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = avatarUrl,
+                                    contentDescription = "Ảnh đại diện",
+                                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Text(
+                                    userName.split(" ").lastOrNull()?.firstOrNull()?.toString() ?: "?",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
                         }
                         
                         Spacer(Modifier.width(16.dp))
@@ -179,7 +193,7 @@ fun ProfileScreen(
             
             item {
                 Text(
-                    "© 2025 TMIX Education",
+                    "© 2026 TMIX Education",
                     Modifier.fillMaxWidth(),
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary,

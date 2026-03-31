@@ -113,6 +113,18 @@ class AuthRepository(
     fun getCurrentUser(): User? = tokenManager?.getCurrentUserSync()
     
     /**
+     * Observe current user as a Flow
+     */
+    val currentUserFlow: kotlinx.coroutines.flow.Flow<User?> = tokenManager?.currentUser ?: kotlinx.coroutines.flow.flowOf(null)
+    
+    /**
+     * Update cached user in local storage
+     */
+    suspend fun updateCachedUser(user: User) {
+        tokenManager?.saveUser(user)
+    }
+    
+    /**
      * Get current user ID
      */
     fun getCurrentUserId(): String? = tokenManager?.getUserIdSync()

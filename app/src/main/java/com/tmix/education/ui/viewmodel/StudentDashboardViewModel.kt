@@ -41,6 +41,15 @@ class StudentDashboardViewModel(
     
     init {
         loadDashboard()
+        
+        // Observe current user changes (e.g., avatar updates) to refresh UI instantly
+        viewModelScope.launch {
+            authRepository.currentUserFlow.collect { user ->
+                if (user != null) {
+                    _state.value = _state.value.copy(user = user)
+                }
+            }
+        }
     }
     
     /**

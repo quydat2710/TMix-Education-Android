@@ -68,15 +68,44 @@ fun StudentDashboardScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Column {
-                        Text("TMIX", style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold, color = TMixRed)
-                        Text(
-                            "Xin chào, ${state.user?.name ?: state.student?.name ?: "Học sinh"}!",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Avatar
+                        val avatarUrl = state.user?.avatar ?: state.student?.avatar
+                        val userName = state.user?.name ?: state.student?.name ?: "Học sinh"
+                        Box(
+                            Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(TMixNavy),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (!avatarUrl.isNullOrBlank()) {
+                                coil.compose.AsyncImage(
+                                    model = avatarUrl,
+                                    contentDescription = "Avatar",
+                                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                )
+                            } else {
+                                Text(
+                                    userName.split(" ").lastOrNull()?.firstOrNull()?.toString() ?: "?",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text("TMIX", style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold, color = TMixRed)
+                            Text(
+                                "Xin chào, $userName!",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 },
                 actions = {

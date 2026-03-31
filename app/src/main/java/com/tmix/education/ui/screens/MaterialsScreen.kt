@@ -2,6 +2,7 @@ package com.tmix.education.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -43,6 +44,10 @@ fun MaterialsScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var selectedClassId by remember { mutableStateOf<String?>(null) }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
+    
+    // In-app viewer states
+    var viewingPdfUrl by remember { mutableStateOf<String?>(null) }
+    var viewingImageUrl by remember { mutableStateOf<String?>(null) }
 
     val classes = dashboardState.classes
 
@@ -65,6 +70,83 @@ fun MaterialsScreen(
                 error = e.message ?: "Không thể tải tài liệu"
             } finally {
                 isLoading = false
+            }
+        }
+    }
+    
+    // Full-screen Image Viewer overlay
+    if (viewingImageUrl != null) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { viewingImageUrl = null },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .clickable { viewingImageUrl = null },
+                contentAlignment = Alignment.Center
+            ) {
+                coil.compose.AsyncImage(
+                    model = viewingImageUrl,
+                    contentDescription = "Xem ảnh",
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                )
+                // Close button
+                IconButton(
+                    onClick = { viewingImageUrl = null },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                ) {
+                    Icon(Icons.Default.Close, "Đóng", tint = Color.White, modifier = Modifier.size(32.dp))
+                }
+            }
+        }
+    }
+    
+    // PDF Viewer using WebView (Google Docs Viewer)
+    if (viewingPdfUrl != null) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { viewingPdfUrl = null },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("Xem tài liệu") },
+                        navigationIcon = {
+                            IconButton(onClick = { viewingPdfUrl = null }) {
+                                Icon(Icons.Default.Close, "Đóng")
+                            }
+                        },
+                        actions = {
+                            // Open in browser fallback
+                            IconButton(onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(viewingPdfUrl))
+                                context.startActivity(intent)
+                            }) {
+                                Icon(Icons.Default.OpenInNew, "Mở ngoài")
+                            }
+                        }
+                    )
+                }
+            ) { padding ->
+                val googleDocsUrl = "https://docs.google.com/gview?embedded=true&url=${java.net.URLEncoder.encode(viewingPdfUrl, "UTF-8")}"
+                androidx.compose.ui.viewinterop.AndroidView(
+                    factory = {
+                        android.webkit.WebView(it).apply {
+                            settings.javaScriptEnabled = true
+                            settings.builtInZoomControls = true
+                            settings.displayZoomControls = false
+                            loadUrl(googleDocsUrl)
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                )
             }
         }
     }
@@ -221,9 +303,19 @@ fun MaterialsScreen(
                             MaterialCard(
                                 material = material,
                                 onClick = {
-                                    // Open file URL in browser
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(material.fileUrl))
-                                    context.startActivity(intent)
+                                    when (material.fileType) {
+                                        "pdf", "document" -> {
+                                            viewingPdfUrl = material.fileUrl
+                                        }
+                                        "image" -> {
+                                            viewingImageUrl = material.fileUrl
+                                        }
+                                        else -> {
+                                            // Fallback: open in external browser
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(material.fileUrl))
+                                            context.startActivity(intent)
+                                        }
+                                    }
                                 }
                             )
                         }
