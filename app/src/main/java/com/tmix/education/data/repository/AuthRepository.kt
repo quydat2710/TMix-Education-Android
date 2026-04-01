@@ -1,6 +1,7 @@
 package com.tmix.education.data.repository
 
 import com.tmix.education.data.api.ApiConfig
+import com.tmix.education.data.api.ApiErrorParser
 import com.tmix.education.data.api.ApiService
 import com.tmix.education.data.local.TokenManager
 import com.tmix.education.data.model.LoginRequest
@@ -37,11 +38,10 @@ class AuthRepository(
                 
                 Result.success(loginResponse.user)
             } else {
-                val errorMsg = response.body()?.message ?: response.message() ?: "Login failed"
-                Result.failure(Exception(errorMsg))
+                Result.failure(Exception(ApiErrorParser.parse(response)))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(ApiErrorParser.parseException(e)))
         }
     }
     
@@ -63,10 +63,10 @@ class AuthRepository(
                 
                 Result.success(tokenResponse.user)
             } else {
-                Result.failure(Exception("Token refresh failed"))
+                Result.failure(Exception(ApiErrorParser.parse(response)))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(ApiErrorParser.parseException(e)))
         }
     }
     
@@ -86,11 +86,10 @@ class AuthRepository(
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {
-                val errorMsg = response.body()?.message ?: "Change password failed"
-                Result.failure(Exception(errorMsg))
+                Result.failure(Exception(ApiErrorParser.parse(response)))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(ApiErrorParser.parseException(e)))
         }
     }
     

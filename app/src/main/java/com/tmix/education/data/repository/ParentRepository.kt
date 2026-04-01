@@ -1,6 +1,7 @@
 package com.tmix.education.data.repository
 
 import com.tmix.education.data.api.ApiConfig
+import com.tmix.education.data.api.ApiErrorParser
 import com.tmix.education.data.api.ApiService
 import com.tmix.education.data.model.*
 import kotlinx.coroutines.Dispatchers
@@ -24,11 +25,10 @@ class ParentRepository(
             if (response.isSuccessful && response.body()?.data != null) {
                 Result.success(response.body()!!.data!!)
             } else {
-                val errorMsg = response.body()?.message ?: "Failed to get parent"
-                Result.failure(Exception(errorMsg))
+                Result.failure(Exception(ApiErrorParser.parse(response)))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(ApiErrorParser.parseException(e)))
         }
     }
     
@@ -119,11 +119,10 @@ class ParentRepository(
             if (response.isSuccessful && response.body()?.data != null) {
                 Result.success(response.body()!!.data!!)
             } else {
-                val errorMsg = response.body()?.message ?: "Failed to get QR code"
-                Result.failure(Exception(errorMsg))
+                Result.failure(Exception(ApiErrorParser.parse(response)))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(ApiErrorParser.parseException(e)))
         }
     }
     
@@ -140,11 +139,10 @@ class ParentRepository(
             if (response.isSuccessful && response.body()?.data != null) {
                 Result.success(response.body()!!.data!!)
             } else {
-                val errorMsg = response.body()?.message ?: "Update failed"
-                Result.failure(Exception(errorMsg))
+                Result.failure(Exception(ApiErrorParser.parse(response)))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception(ApiErrorParser.parseException(e)))
         }
     }
 }

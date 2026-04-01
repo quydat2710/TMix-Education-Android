@@ -46,6 +46,20 @@ val InfoLight = Color(0xFFDBEAFE)
 val ShimmerBase = Color(0xFFE2E8F0)
 val ShimmerHighlight = Color(0xFFF8FAFC)
 
+// ========== Pastel Tints (stat card backgrounds) ==========
+val NavyTint = Color(0xFFEEF2F7)         // Super-soft navy background
+val RedTint = Color(0xFFFEF2F2)          // Super-soft red background
+val SuccessTint = Color(0xFFF0FDF4)      // Super-soft green
+val InfoTint = Color(0xFFF0F7FF)         // Super-soft blue
+val WarningTint = Color(0xFFFFFBEB)      // Super-soft yellow
+
+// ========== Card Surface ==========
+val CardSurface = Color(0xFFFFFFFF)
+val CardSurfaceElevated = Color(0xFFFCFDFE)  // Barely tinted for depth
+
 // ========== Gradient Brushes (brand-consistent) ==========
 val GradientNavy = Brush.linearGradient(listOf(TMixNavy, TMixNavySoft))
 val GradientNavyVertical = Brush.verticalGradient(listOf(TMixNavy, TMixNavyLight))
+val GradientRed = Brush.linearGradient(listOf(TMixRed, TMixRedSoft))
+val GradientRedVertical = Brush.verticalGradient(listOf(TMixRed, TMixRedLight))
+val GradientNavyToRed = Brush.linearGradient(listOf(TMixNavy, TMixRed))

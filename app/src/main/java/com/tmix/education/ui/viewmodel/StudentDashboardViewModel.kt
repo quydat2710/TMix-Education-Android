@@ -101,6 +101,31 @@ class StudentDashboardViewModel(
                     }
                 }
                 _state.value = _state.value.copy(classProgress = progressMap)
+                
+                // Build today's schedule from enrolled classes
+                val todaySchedule = mutableListOf<ScheduleItem>()
+                val today = java.time.LocalDate.now()
+                val todayDow = today.dayOfWeek.value // 1=Mon ... 7=Sun
+                // Backend: "0"=Sun, "1"=Mon, ..., "6"=Sat
+                val todayBackend = if (todayDow == 7) "0" else todayDow.toString()
+                
+                student.classes?.forEach { enrollment ->
+                    enrollment.classInfo?.let { classInfo ->
+                        val schedule = classInfo.schedule
+                        if (schedule != null && schedule.daysOfWeek != null) {
+                            val matchDay = schedule.daysOfWeek.any { it.trim() == todayBackend }
+                            if (matchDay) {
+                                todaySchedule.add(ScheduleItem(
+                                    className = classInfo.name,
+                                    startTime = schedule.timeSlots?.startTime,
+                                    endTime = schedule.timeSlots?.endTime,
+                                    room = classInfo.room
+                                ))
+                            }
+                        }
+                    }
+                }
+                _state.value = _state.value.copy(schedule = todaySchedule)
             }.onFailure { error ->
                 _state.value = _state.value.copy(error = error.message)
             }

@@ -6,24 +6,30 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tmix.education.data.model.Student
 import com.tmix.education.ui.theme.*
 import com.tmix.education.ui.viewmodel.ParentDashboardViewModel
 import com.tmix.education.ui.viewmodel.NotificationViewModel
-import com.tmix.education.ui.components.BannerCarousel
+import com.tmix.education.ui.components.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.text.NumberFormat
 import java.util.Locale
+
 
 data class ParentNotification(
     val id: String,
@@ -35,8 +41,8 @@ data class ParentNotification(
 )
 
 /**
- * Parent Dashboard Screen
- * Overview of children's activities - connected to real backend data
+ * Parent Dashboard — Premium Redesign
+ * With entrance animations, shimmer loading, gradient depth
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,8 +61,7 @@ fun ParentDashboardScreen(
     val showSnackbar by (notificationViewModel?.showSnackbar ?: MutableStateFlow(false)).collectAsState()
     val latestNotification by (notificationViewModel?.latestNotification ?: MutableStateFlow(null)).collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    
-    // Show Snackbar when new notification arrives
+
     LaunchedEffect(showSnackbar, latestNotification) {
         if (showSnackbar && latestNotification != null) {
             snackbarHostState.showSnackbar(
@@ -73,8 +78,13 @@ fun ParentDashboardScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("TMIX", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = TMixRed)
-                        Text("Xin chào, $parentName!", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+                        Text("TMIX", style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold, color = TMixRed,
+                            letterSpacing = 2.sp)
+                        Text("Xin chào, $parentName!",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 },
                 actions = {
@@ -103,19 +113,41 @@ fun ParentDashboardScreen(
     ) { padding ->
         when {
             state.isLoading -> {
-                Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = TMixRed)
+                // Shimmer skeleton loading
+                LazyColumn(
+                    Modifier.fillMaxSize().padding(padding).background(MaterialTheme.colorScheme.background),
+                    contentPadding = PaddingValues(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    item { ShimmerBox(width = 300.dp, height = 120.dp, cornerRadius = 20.dp) }
+                    item { SkeletonStatsRow() }
+                    item { repeat(2) { SkeletonCard(Modifier.padding(bottom = 12.dp)) } }
                 }
             }
             state.error != null -> {
                 Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.ErrorOutline, null, Modifier.size(64.dp), tint = Error)
-                        Spacer(Modifier.height(16.dp))
-                        Text(state.error ?: "Có lỗi xảy ra", style = MaterialTheme.typography.titleMedium, color = TextSecondary)
-                        Spacer(Modifier.height(16.dp))
-                        Button(onClick = { viewModel.refresh() }, colors = ButtonDefaults.buttonColors(containerColor = TMixRed)) {
-                            Text("Thử lại")
+                    Card(
+                        shape = TMixShapes.CardLarge,
+                        colors = CardDefaults.cardColors(containerColor = ErrorLight),
+                        elevation = CardDefaults.cardElevation(0.dp)
+                    ) {
+                        Column(
+                            Modifier.padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(Icons.Default.ErrorOutline, null, Modifier.size(56.dp), tint = Error)
+                            Spacer(Modifier.height(16.dp))
+                            Text(state.error ?: "Có lỗi xảy ra",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(Modifier.height(20.dp))
+                            Button(
+                                onClick = { viewModel.refresh() },
+                                colors = ButtonDefaults.buttonColors(containerColor = TMixRed),
+                                shape = TMixShapes.Button
+                            ) {
+                                Text("Thử lại", fontWeight = FontWeight.SemiBold)
+                            }
                         }
                     }
                 }
@@ -123,94 +155,148 @@ fun ParentDashboardScreen(
             else -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().padding(padding),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    contentPadding = PaddingValues(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    // Banner carousel
+                    // Banner
                     item {
-                        BannerCarousel(Modifier.fillMaxWidth())
+                        SlideInFromBottom(index = 0) {
+                            BannerCarousel(Modifier.fillMaxWidth())
+                        }
                     }
-                    
-                    // Quick stats
+
+                    // Quick stats — gradient cards
                     item {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Card(
-                                onClick = onChildClick,
-                                modifier = Modifier.weight(1f),
-                                shape = TMixShapes.Card,
-                                colors = CardDefaults.cardColors(containerColor = TMixNavy)
-                            ) {
-                                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Filled.People, null, Modifier.size(32.dp), tint = Color.White)
-                                    Spacer(Modifier.width(12.dp))
-                                    Column {
-                                        Text("${children.size}", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
-                                        Text("Con của tôi", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(0.8f))
+                        SlideInFromBottom(index = 1) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                Card(
+                                    onClick = onChildClick,
+                                    modifier = Modifier.weight(1f),
+                                    shape = TMixShapes.CardLarge,
+                                    elevation = CardDefaults.cardElevation(4.dp)
+                                ) {
+                                    Box(
+                                        Modifier.fillMaxWidth()
+                                            .background(Brush.linearGradient(listOf(TMixNavy, TMixNavySoft)))
+                                            .padding(18.dp)
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Box(
+                                                Modifier.size(42.dp).clip(CircleShape)
+                                                    .background(Color.White.copy(0.15f)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(Icons.Filled.People, null, Modifier.size(24.dp), tint = Color.White)
+                                            }
+                                            Spacer(Modifier.width(14.dp))
+                                            Column {
+                                                Text("${children.size}",
+                                                    style = MaterialTheme.typography.headlineMedium,
+                                                    fontWeight = FontWeight.Bold, color = Color.White)
+                                                Text("Con của tôi",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = Color.White.copy(0.8f))
+                                            }
+                                        }
                                     }
                                 }
-                            }
-                            Card(
-                                onClick = onPaymentClick,
-                                modifier = Modifier.weight(1f),
-                                shape = TMixShapes.Card,
-                                colors = CardDefaults.cardColors(containerColor = TMixRed)
-                            ) {
-                                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Filled.Payment, null, Modifier.size(32.dp), tint = Color.White)
-                                    Spacer(Modifier.width(12.dp))
-                                    Column {
-                                        val pendingText = if (state.totalPendingAmount > 0) {
-                                            val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
-                                            formatter.maximumFractionDigits = 0
-                                            "${formatter.format(state.totalPendingAmount.toLong())}đ"
-                                        } else "0đ"
-                                        Text(pendingText, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
-                                        Text("Học phí/tháng", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(0.8f))
+
+                                Card(
+                                    onClick = onPaymentClick,
+                                    modifier = Modifier.weight(1f),
+                                    shape = TMixShapes.CardLarge,
+                                    elevation = CardDefaults.cardElevation(4.dp)
+                                ) {
+                                    Box(
+                                        Modifier.fillMaxWidth()
+                                            .background(Brush.linearGradient(listOf(TMixRed, TMixRedSoft)))
+                                            .padding(18.dp)
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Box(
+                                                Modifier.size(42.dp).clip(CircleShape)
+                                                    .background(Color.White.copy(0.15f)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(Icons.Filled.Payment, null, Modifier.size(24.dp), tint = Color.White)
+                                            }
+                                            Spacer(Modifier.width(14.dp))
+                                            Column {
+                                                val pendingText = if (state.totalPendingAmount > 0) {
+                                                    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+                                                    formatter.maximumFractionDigits = 0
+                                                    "${formatter.format(state.totalPendingAmount.toLong())}đ"
+                                                } else "0đ"
+                                                Text(pendingText,
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold, color = Color.White)
+                                                Text("Học phí/tháng",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = Color.White.copy(0.8f))
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
 
-                    // Children overview
+                    // Children section
                     if (children.isNotEmpty()) {
                         item {
-                            Text("Con của tôi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                            SlideInFromBottom(index = 2) {
+                                SectionHeader(icon = Icons.Filled.FamilyRestroom, title = "Con của tôi")
+                            }
                         }
                         item {
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                items(children) { child ->
-                                    val classCount = child.classes?.size ?: 0
-                                    ChildOverviewCard(
-                                        name = child.name,
-                                        grade = "$classCount lớp",
-                                        attendance = 0f, // Will be loaded per child
-                                        onClick = onChildClick
-                                    )
+                            SlideInFromBottom(index = 3) {
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                    items(children) { child ->
+                                        FadeInScale(delay = 100) {
+                                            ChildOverviewCard(
+                                                name = child.name,
+                                                grade = "${child.classes?.size ?: 0} lớp",
+                                                attendance = 0f,
+                                                onClick = onChildClick
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
 
-                    // Pending payments info
+                    // Pending payments
                     if (state.pendingPaymentsCount > 0) {
                         item {
-                            Card(
-                                onClick = onPaymentClick,
-                                shape = TMixShapes.Card,
-                                colors = CardDefaults.cardColors(containerColor = WarningLight)
-                            ) {
-                                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Filled.Warning, null, Modifier.size(24.dp), tint = Warning)
-                                    Spacer(Modifier.width(12.dp))
-                                    Column(Modifier.weight(1f)) {
-                                        Text(
-                                            "Có ${state.pendingPaymentsCount} hóa đơn chưa thanh toán",
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = Warning
-                                        )
-                                        Text("Nhấn để xem chi tiết", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                            SlideInFromBottom(index = 4) {
+                                Card(
+                                    onClick = onPaymentClick,
+                                    shape = TMixShapes.Card,
+                                    colors = CardDefaults.cardColors(containerColor = WarningTint),
+                                    elevation = CardDefaults.cardElevation(0.dp)
+                                ) {
+                                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            Modifier.size(36.dp).clip(CircleShape)
+                                                .background(Warning.copy(alpha = 0.15f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(Icons.Filled.Warning, null, Modifier.size(18.dp), tint = Warning)
+                                        }
+                                        Spacer(Modifier.width(14.dp))
+                                        Column(Modifier.weight(1f)) {
+                                            Text(
+                                                "Có ${state.pendingPaymentsCount} hóa đơn chưa thanh toán",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = Warning
+                                            )
+                                            Text("Nhấn để xem chi tiết",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                        Icon(Icons.Filled.ChevronRight, null, Modifier.size(20.dp), tint = Warning)
                                     }
                                 }
                             }
@@ -219,44 +305,57 @@ fun ParentDashboardScreen(
 
                     // Quick actions
                     item {
-                        Text("Thao tác nhanh", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        SlideInFromBottom(index = 5) {
+                            SectionHeader(icon = Icons.Filled.Bolt, title = "Thao tác nhanh")
+                        }
                     }
 
                     item {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            OutlinedButton(
-                                onClick = onChildClick,
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = TMixNavy),
-                                modifier = Modifier.weight(1f).height(56.dp),
-                                shape = TMixShapes.Button
-                            ) {
-                                Icon(Icons.Filled.CalendarMonth, null)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Xem lịch học", fontWeight = FontWeight.SemiBold)
-                            }
-                            Button(
-                                onClick = onPaymentClick,
-                                colors = ButtonDefaults.buttonColors(containerColor = TMixRed),
-                                modifier = Modifier.weight(1f).height(56.dp),
-                                shape = TMixShapes.Button
-                            ) {
-                                Icon(Icons.Filled.QrCode2, null)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Thanh toán", fontWeight = FontWeight.SemiBold)
+                        SlideInFromBottom(index = 6) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                QuickActionCard(Modifier.weight(1f), Icons.Filled.CalendarMonth,
+                                    "Lịch học", "Xem chi tiết",
+                                    Brush.linearGradient(listOf(TMixNavy, TMixNavySoft)),
+                                    onClick = onChildClick)
+                                QuickActionCard(Modifier.weight(1f), Icons.Filled.QrCode2,
+                                    "Thanh toán", "Quét QR",
+                                    Brush.linearGradient(listOf(TMixRed, TMixRedSoft)),
+                                    onClick = onPaymentClick)
                             }
                         }
                     }
-                    
+
                     item {
-                        Button(
-                            onClick = onCourseClick,
-                            modifier = Modifier.fillMaxWidth().height(52.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = TMixNavy),
-                            shape = TMixShapes.Button
-                        ) {
-                            Icon(Icons.Filled.School, null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Đăng ký khóa học mới", fontWeight = FontWeight.SemiBold)
+                        SlideInFromBottom(index = 7) {
+                            Card(
+                                onClick = onCourseClick,
+                                shape = TMixShapes.CardLarge,
+                                elevation = CardDefaults.cardElevation(4.dp)
+                            ) {
+                                Box(
+                                    Modifier.fillMaxWidth()
+                                        .background(Brush.linearGradient(listOf(TMixNavy, TMixNavySoft)))
+                                        .padding(18.dp)
+                                ) {
+                                    Row(
+                                        Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Box(
+                                            Modifier.size(36.dp).clip(CircleShape)
+                                                .background(Color.White.copy(0.15f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(Icons.Filled.School, null, Modifier.size(20.dp), tint = Color.White)
+                                        }
+                                        Spacer(Modifier.width(12.dp))
+                                        Text("Đăng ký khóa học mới",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold, color = Color.White)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -270,38 +369,66 @@ fun ParentDashboardScreen(
 fun ChildOverviewCard(name: String, grade: String, attendance: Float, onClick: () -> Unit = {}) {
     Card(
         onClick = onClick,
-        modifier = Modifier.width(180.dp),
-        shape = TMixShapes.Card,
-        elevation = CardDefaults.cardElevation(2.dp)
+        modifier = Modifier.width(200.dp),
+        shape = TMixShapes.CardLarge,
+        elevation = CardDefaults.cardElevation(3.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(Modifier.padding(16.dp)) {
+        Column(Modifier.padding(18.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // Gradient avatar ring
                 Box(
-                    Modifier.size(40.dp).background(TMixNavy, shape = androidx.compose.foundation.shape.CircleShape),
+                    Modifier.size(46.dp).clip(CircleShape)
+                        .background(Brush.linearGradient(listOf(TMixNavy, TMixNavySoft))),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(name.split(" ").lastOrNull()?.firstOrNull()?.toString() ?: "?", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                    Box(
+                        Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            Modifier.size(38.dp).clip(CircleShape).background(TMixNavy),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                name.split(" ").lastOrNull()?.firstOrNull()?.toString() ?: "?",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold, color = Color.White
+                            )
+                        }
+                    }
                 }
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(12.dp))
                 Column {
-                    Text(name.split(" ").lastOrNull() ?: name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                    Text(grade, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                    Text(name.split(" ").lastOrNull() ?: name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                    Spacer(Modifier.height(2.dp))
+                    Surface(
+                        color = NavyTint,
+                        shape = TMixShapes.Chip
+                    ) {
+                        Text(grade, Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TMixNavy, fontWeight = FontWeight.Medium)
+                    }
                 }
             }
 
             if (attendance > 0) {
-                Spacer(Modifier.height(12.dp))
-
+                Spacer(Modifier.height(14.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Điểm danh", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
-                    Text("${(attendance * 100).toInt()}%", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Success)
+                    Text("Điểm danh", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("${(attendance * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold, color = Success)
                 }
-
+                Spacer(Modifier.height(4.dp))
                 LinearProgressIndicator(
                     progress = { attendance },
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    modifier = Modifier.fillMaxWidth().height(4.dp).clip(TMixShapes.Badge),
                     color = Success,
-                    trackColor = SuccessLight
+                    trackColor = SuccessTint
                 )
             }
         }

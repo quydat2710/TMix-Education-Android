@@ -1,10 +1,14 @@
 package com.tmix.education.ui.screens
 
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -14,18 +18,28 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.tmix.education.ui.theme.*
 import com.tmix.education.data.model.User
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.tmix.education.ui.viewmodel.ProfileViewModel
 
 /**
  * Profile Screen (shared between Student and Parent)
- * Now displays real avatar from user.avatar URL using Coil
+ * TopCV Redesign: Features a fixed top banner, floating white profile card, and sticky header.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,116 +49,182 @@ fun ProfileScreen(
     onLogout: () -> Unit = {},
     onEditProfile: () -> Unit = {},
     onChangePassword: () -> Unit = {},
-    onHelpCenter: () -> Unit = {}
+    onHelpCenter: () -> Unit = {},
+    onChangeAvatar: () -> Unit = {},
+    profileViewModel: ProfileViewModel = viewModel()
 ) {
     val themeManager = LocalThemeManager.current
     val isDarkMode by themeManager.isDarkMode.collectAsState()
-    
+
     val userName = user?.name ?: if (isStudent) "Học sinh" else "Phụ huynh"
     val userRole = if (isStudent) "Học sinh" else "Phụ huynh"
     val userEmail = user?.email ?: ""
     val avatarUrl = user?.avatar
-    
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Tài khoản", fontWeight = FontWeight.Bold) }
-            )
+
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            selectedImageUri = it
+            profileViewModel.uploadAvatar(context.contentResolver, it)
         }
-    ) { padding ->
+    }
+
+    val listState = rememberLazyListState()
+
+    // Lắng nghe vị trí cuộn để bật/tắt Sticky Header
+    val showTopBar by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 220
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        
+        // --- 1. Main Scrollable Content ---
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            state = listState,
+            modifier = Modifier.fillMaxSize().zIndex(1f),
+            contentPadding = PaddingValues(bottom = 100.dp) // Card nằm chìm ngập tự do trên cùng
         ) {
-            // Profile header
             item {
-                Card(
-                    shape = TMixShapes.Card,
-                    colors = CardDefaults.cardColors(containerColor = TMixNavy)
+                Box(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    // Top Background Banner (Scrolls naturally with the list with parallax)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp)
+                            .graphicsLayer {
+                                // Parallax hiệu ứng "bị hút": nền dồn co lại lên mép trên
+                                val scroll = if (listState.firstVisibleItemIndex == 0) listState.firstVisibleItemScrollOffset.toFloat() else 180f
+                                val fraction = (scroll / 180f).coerceIn(0f, 1f)
+                                alpha = 1f - fraction
+                                scaleY = 1f - fraction
+                                transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f) 
+                                translationY = scroll * 0.5f // đẩy xuống lại một chút để cảm giác bị dồn ép
+                            }
+                            .background(Brush.linearGradient(listOf(TMixNavy, TMixNavySoft)))
+                            .drawBehind {
+                                // 1. Large soft decorative circles (Tech/Glassmorphism feel)
+                                drawCircle(
+                                    color = Color.White,
+                                    radius = size.height * 0.8f,
+                                    center = androidx.compose.ui.geometry.Offset(size.width * 0.8f, -size.height * 0.2f),
+                                    alpha = 0.06f
+                                )
+                                drawCircle(
+                                    color = Color.White,
+                                    radius = size.height * 0.6f,
+                                    center = androidx.compose.ui.geometry.Offset(size.width * 0.2f, size.height * 1.2f),
+                                    alpha = 0.03f
+                                )
+
+                                
+                                // 2.style Dotted Chevron Pattern (Ma trận hạt tạo hình mũi tên >)
+                                val dotRadius = 1.5.dp.toPx()
+                                val spacing = 12.dp.toPx()
+                                val cols = (size.width / spacing).toInt()
+                                val rows = (size.height / spacing).toInt()
+                                
+                                val tipX = size.width * 0.9f
+                                val tipY = size.height * 0.5f
+                                val thickness = 60.dp.toPx() 
+                                
+                                for (i in 0..cols) {
+                                    for (j in 0..rows) {
+                                        val x = i * spacing
+                                        val y = j * spacing
+                                        
+                                        // Phương trình mũi tên chĩa sang phải: >
+                                        val expectedX = tipX - kotlin.math.abs(y - tipY) * 1.2f // * 1.2f để bẹt ra một chút
+                                        val distanceToChevron = kotlin.math.abs(x - expectedX)
+                                        
+                                        if (distanceToChevron < thickness) {
+                                            val alphaBase = 1f - (distanceToChevron / thickness)
+                                            val alphaFadeLeft = (x / size.width).coerceIn(0f, 1f)
+                                            val finalAlpha = (alphaBase * alphaFadeLeft * 0.25f).coerceIn(0f, 1f)
+                                            
+                                            if (finalAlpha > 0.02f) {
+                                                drawCircle(
+                                                    color = Color.White,
+                                                    radius = dotRadius,
+                                                    center = androidx.compose.ui.geometry.Offset(x, y),
+                                                    alpha = finalAlpha
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                    )
+                    
+                    // Profile Card positioned overlapping the banner
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Avatar — real image or letter fallback
+                        Spacer(modifier = Modifier.height(100.dp)) // Đẩy Card xuống ngang nửa dưới của Banner
                         Box(
-                            Modifier
-                                .size(72.dp)
-                                .clip(CircleShape)
-                                .background(TMixRed),
-                            contentAlignment = Alignment.Center
+                            modifier = Modifier
+                                .padding(horizontal = 20.dp)
+                                .graphicsLayer {
+                                    val scroll = if (listState.firstVisibleItemIndex == 0) listState.firstVisibleItemScrollOffset.toFloat() else 250f
+                                    val fraction = (scroll / 250f).coerceIn(0f, 1f)
+                                    // Thể hiện sự "teo/thu nhỏ" và hút lên
+                                    scaleX = 1f - (fraction * 0.15f) 
+                                    scaleY = 1f - (fraction * 0.15f)
+                                    alpha = 1f - fraction           
+                                    translationY = -(scroll * 0.3f) 
+                                }
                         ) {
-                            if (!avatarUrl.isNullOrBlank()) {
-                                AsyncImage(
-                                    model = avatarUrl,
-                                    contentDescription = "Ảnh đại diện",
-                                    modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } else {
-                                Text(
-                                    userName.split(" ").lastOrNull()?.firstOrNull()?.toString() ?: "?",
-                                    style = MaterialTheme.typography.headlineMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
-                        }
-                        
-                        Spacer(Modifier.width(16.dp))
-                        
-                        Column {
-                            Text(userName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.White)
-                            Text(userEmail, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(0.8f))
-                            Spacer(Modifier.height(4.dp))
-                            Surface(color = TMixRed, shape = TMixShapes.Chip) {
-                                Text(userRole, Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = Color.White)
-                            }
+                            ExpandedProfileCard(
+                                userName = userName,
+                                userEmail = userEmail,
+                                userRole = userRole,
+                                avatarUrl = selectedImageUri ?: avatarUrl,
+                                onChangeAvatar = { imagePickerLauncher.launch("image/*") }
+                            )
                         }
                     }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
             }
             
-            // Account section
+            // Account Section
+            item { SectionTitle("Tài khoản của tôi") }
             item {
-                Text("Tài khoản", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = TextSecondary)
-            }
-            
-            item {
-                Card(shape = TMixShapes.Card) {
+                Card(modifier = Modifier.padding(horizontal = 20.dp), shape = TMixShapes.Card, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Column {
-                        ProfileMenuItem(Icons.Default.Person, "Thông tin cá nhân", onClick = onEditProfile)
+                        ProfileMenuItem(Icons.Default.Person, "Thay đổi thông tin cá nhân", onClick = onEditProfile)
                         HorizontalDivider()
                         ProfileMenuItem(Icons.Default.Lock, "Đổi mật khẩu", onClick = onChangePassword)
                         HorizontalDivider()
                         ProfileMenuItem(Icons.Default.Fingerprint, "Đăng nhập sinh trắc học")
                     }
                 }
+                Spacer(Modifier.height(24.dp))
             }
-            
-            // Settings section
+
+            // Settings Section
+            item { SectionTitle("Cài đặt hệ thống") }
             item {
-                Text("Cài đặt", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = TextSecondary)
-            }
-            
-            item {
-                Card(shape = TMixShapes.Card) {
+                Card(modifier = Modifier.padding(horizontal = 20.dp), shape = TMixShapes.Card, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Column {
                         ProfileMenuItem(Icons.Default.Notifications, "Thông báo")
                         HorizontalDivider()
                         ProfileMenuItem(Icons.Default.Language, "Ngôn ngữ", trailing = "Tiếng Việt")
                         HorizontalDivider()
-                        // Dark Mode Toggle - hoạt động thật
+                        // Dark mode toggle
                         Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
+                            Modifier.fillMaxWidth().clickable { themeManager.setDarkMode(!isDarkMode) }.padding(horizontal = 20.dp, vertical = 16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(Icons.Default.DarkMode, null, Modifier.size(24.dp), tint = TMixNavy)
                             Spacer(Modifier.width(16.dp))
-                            Text("Chế độ tối", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+                            Text("Chế độ tối", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
                             Switch(
                                 checked = isDarkMode,
                                 onCheckedChange = { themeManager.setDarkMode(it) },
@@ -158,15 +238,13 @@ fun ProfileScreen(
                         }
                     }
                 }
+                Spacer(Modifier.height(24.dp))
             }
             
-            // Support section
+            // Support Section
+            item { SectionTitle("Hỗ trợ") }
             item {
-                Text("Hỗ trợ", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = TextSecondary)
-            }
-            
-            item {
-                Card(shape = TMixShapes.Card) {
+                Card(modifier = Modifier.padding(horizontal = 20.dp), shape = TMixShapes.Card, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Column {
                         ProfileMenuItem(Icons.Default.Help, "Trung tâm trợ giúp", onClick = onHelpCenter)
                         HorizontalDivider()
@@ -175,13 +253,14 @@ fun ProfileScreen(
                         ProfileMenuItem(Icons.Default.Star, "Đánh giá ứng dụng")
                     }
                 }
+                Spacer(Modifier.height(24.dp))
             }
-            
+
             // Logout
             item {
                 OutlinedButton(
                     onClick = onLogout,
-                    Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                     shape = TMixShapes.Button,
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Error)
                 ) {
@@ -189,16 +268,230 @@ fun ProfileScreen(
                     Spacer(Modifier.width(8.dp))
                     Text("Đăng xuất")
                 }
+                Spacer(Modifier.height(24.dp))
             }
             
             item {
                 Text(
                     "© 2026 TMIX Education",
-                    Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center
                 )
+            }
+        }
+        
+        // 2. Header thu gọn (Sticky) đè lên trên cùng 
+        // Hiệu ứng Fade mượt mà (chỉ hiện khi cuộn đủ cao), bỏ slideIn gây lấp/cắt ngang thẻ
+        AnimatedVisibility(
+            visible = showTopBar,
+            enter = fadeIn(animationSpec = androidx.compose.animation.core.tween(300)),
+            exit = fadeOut(animationSpec = androidx.compose.animation.core.tween(200)),
+            modifier = Modifier.zIndex(2f)
+        ) {
+            CollapsedTopBar(
+                userName = userName,
+                userEmail = userEmail,
+                avatarUrl = selectedImageUri ?: avatarUrl
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------
+// REUSABLE COMPONENTS
+// ---------------------------------------------------------
+
+@Composable
+fun SectionTitle(title: String) {
+    Text(
+        text = title, 
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+        style = MaterialTheme.typography.titleMedium, 
+        fontWeight = FontWeight.Bold, 
+        color = MaterialTheme.colorScheme.onBackground
+    )
+}
+
+@Composable
+fun ExpandedProfileCard(
+    userName: String,
+    userEmail: String,
+    userRole: String,
+    avatarUrl: Any?,
+    onChangeAvatar: () -> Unit = {}
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = TMixShapes.CardLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Avatar With TopCV style Border & Camera Overlay
+            Box(
+                Modifier.size(80.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                // Circle Avatar
+                Box(
+                    Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .border(1.5.dp, TMixNavy, CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable { onChangeAvatar() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (avatarUrl != null && avatarUrl.toString().isNotBlank()) {
+                        AsyncImage(
+                            model = avatarUrl,
+                            contentDescription = "Ảnh đại diện",
+                            modifier = Modifier.fillMaxSize().padding(3.dp).clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            userName.split(" ").lastOrNull()?.firstOrNull()?.toString() ?: "?",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TMixNavy
+                        )
+                    }
+                }
+                
+                // Camera Icon overlay on bottom right
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .offset(x = 4.dp, y = 4.dp)
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surface) // white gap
+                        .padding(2.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.onSurface) // Dark camera circle
+                        .clickable { onChangeAvatar() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.CameraAlt,
+                        contentDescription = "Đổi ảnh",
+                        tint = MaterialTheme.colorScheme.surface,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(20.dp))
+
+            Column {
+                Text(
+                    text = userName, 
+                    style = MaterialTheme.typography.titleLarge, 
+                    fontWeight = FontWeight.Bold, 
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (userEmail.isNotBlank()) {
+                    Text(
+                        text = userEmail, 
+                        style = MaterialTheme.typography.bodyMedium, 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                // TopCV style badge: Gray pill, dark text, up icon
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), 
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.ArrowCircleUp, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = userRole, 
+                            style = MaterialTheme.typography.labelMedium, 
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CollapsedTopBar(
+    userName: String,
+    userEmail: String,
+    avatarUrl: Any?,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(90.dp), // Standard TopAppBar height
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 4.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 20.dp).fillMaxHeight(),
+            verticalAlignment = Alignment.Bottom 
+        ) {
+            Box(
+                Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .border(1.dp, TMixNavy, CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                if (avatarUrl != null && avatarUrl.toString().isNotBlank()) {
+                    AsyncImage(
+                        model = avatarUrl,
+                        contentDescription = "Ảnh đại diện thu nhỏ",
+                        modifier = Modifier.fillMaxSize().padding(1.dp).clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Text(
+                        userName.split(" ").lastOrNull()?.firstOrNull()?.toString() ?: "?",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TMixNavy
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(16.dp))
+            
+            Column(
+                modifier = Modifier.align(Alignment.CenterVertically),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = userName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (userEmail.isNotBlank()) {
+                    Text(
+                        text = userEmail,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
@@ -210,16 +503,16 @@ fun ProfileMenuItem(icon: ImageVector, title: String, trailing: String? = null, 
         Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(16.dp),
+            .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, null, Modifier.size(24.dp), tint = TMixNavy)
+        Icon(icon, null, Modifier.size(24.dp), tint = TMixNavy) 
         Spacer(Modifier.width(16.dp))
-        Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
+        Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
         if (trailing != null) {
-            Text(trailing, style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+            Text(trailing, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(8.dp))
         }
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = TextSecondary)
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

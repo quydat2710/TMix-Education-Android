@@ -155,8 +155,9 @@ fun StudentTestsScreen(
 fun RealTestCard(test: Test, onStartTest: () -> Unit = {}) {
     Card(
         onClick = { if (!test.hasAttempted) onStartTest() },
-        shape = TMixShapes.Card,
-        elevation = CardDefaults.cardElevation(2.dp)
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp, pressedElevation = 6.dp)
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {

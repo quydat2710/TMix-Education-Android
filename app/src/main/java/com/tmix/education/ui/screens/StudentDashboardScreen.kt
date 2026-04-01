@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tmix.education.ui.theme.*
 import com.tmix.education.ui.viewmodel.StudentDashboardViewModel
@@ -29,9 +30,8 @@ import com.tmix.education.ui.components.*
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
- * Student Dashboard Screen — Polished Edition
- * Brand colors preserved: Navy + Red
- * Added: smooth entrance animations, better card design, shimmer loading, timeline schedule
+ * Student Dashboard — Premium Redesign
+ * Clean & minimalist with depth, soft shadows, gradient accents
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,36 +69,49 @@ fun StudentDashboardScreen(
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Avatar
                         val avatarUrl = state.user?.avatar ?: state.student?.avatar
                         val userName = state.user?.name ?: state.student?.name ?: "Học sinh"
+                        // Avatar with gradient ring
                         Box(
                             Modifier
-                                .size(40.dp)
+                                .size(44.dp)
                                 .clip(CircleShape)
-                                .background(TMixNavy),
+                                .background(
+                                    Brush.linearGradient(listOf(TMixNavy, TMixNavySoft))
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (!avatarUrl.isNullOrBlank()) {
-                                coil.compose.AsyncImage(
-                                    model = avatarUrl,
-                                    contentDescription = "Avatar",
-                                    modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                                )
-                            } else {
-                                Text(
-                                    userName.split(" ").lastOrNull()?.firstOrNull()?.toString() ?: "?",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
+                            Box(
+                                Modifier.size(40.dp).clip(CircleShape).background(CardSurface),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (!avatarUrl.isNullOrBlank()) {
+                                    coil.compose.AsyncImage(
+                                        model = avatarUrl,
+                                        contentDescription = "Avatar",
+                                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                    )
+                                } else {
+                                    Box(
+                                        Modifier.fillMaxSize().background(TMixNavy),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            userName.split(" ").lastOrNull()?.firstOrNull()?.toString() ?: "?",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
                             }
                         }
                         Spacer(Modifier.width(12.dp))
                         Column {
-                            Text("TMIX", style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold, color = TMixRed)
+                            Text("TMIX", style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold, color = TMixRed,
+                                letterSpacing = 2.sp)
                             Text(
                                 "Xin chào, $userName!",
                                 style = MaterialTheme.typography.titleMedium,
@@ -130,31 +143,33 @@ fun StudentDashboardScreen(
     ) { padding ->
 
         if (state.isLoading && state.classes.isEmpty()) {
-            // ========== SHIMMER SKELETON LOADING ==========
             LazyColumn(
                 Modifier.fillMaxSize().padding(padding).background(MaterialTheme.colorScheme.background),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                // Fixed ambiguity: using 'item { repeat(3) { ... } }' instead of 'items(3)'
-                item { ShimmerBox(width = 300.dp, height = 120.dp, cornerRadius = 16.dp) }
+                item { ShimmerBox(width = 300.dp, height = 120.dp, cornerRadius = 20.dp) }
                 item { SkeletonStatsRow() }
                 item { repeat(3) { SkeletonCard(Modifier.padding(bottom = 12.dp)) } }
             }
         } else {
             LazyColumn(
                 Modifier.fillMaxSize().padding(padding).background(MaterialTheme.colorScheme.background),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                // Error message
+                // Error
                 state.error?.let { error ->
                     item {
-                        Card(colors = CardDefaults.cardColors(containerColor = ErrorLight)) {
-                            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Filled.Warning, null, tint = Error)
-                                Spacer(Modifier.width(8.dp))
-                                Text(error, color = Error, style = MaterialTheme.typography.bodySmall)
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = ErrorLight),
+                            shape = TMixShapes.Card
+                        ) {
+                            Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.ErrorOutline, null, Modifier.size(20.dp), tint = Error)
+                                Spacer(Modifier.width(10.dp))
+                                Text(error, color = Error, style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium)
                             }
                         }
                     }
@@ -167,7 +182,7 @@ fun StudentDashboardScreen(
                     }
                 }
 
-                // Stats Row — improved with icons + elevation
+                // Stats Row — gradient icon circle + pastel tint background
                 item {
                     SlideInFromBottom(index = 1) {
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -176,57 +191,39 @@ fun StudentDashboardScreen(
                                 if (it.total > 0) "${(it.present * 100 / it.total)}%" else "0%"
                             } ?: "N/A"
 
-                            StatCard(Modifier.weight(1f), "Số lớp", classCount, Icons.Filled.MenuBook, TMixNavy)
-                            StatCard(Modifier.weight(1f), "Kiểm tra", state.upcomingTests.toString(), Icons.Filled.Quiz, TMixRed)
-                            StatCard(Modifier.weight(1f), "Điểm danh", attendanceRate, Icons.Filled.CheckCircle, Success)
+                            StatCard(Modifier.weight(1f), "Số lớp", classCount,
+                                Icons.Filled.MenuBook, TMixNavy, NavyTint)
+                            StatCard(Modifier.weight(1f), "Kiểm tra", state.upcomingTests.toString(),
+                                Icons.Filled.Quiz, TMixRed, RedTint)
+                            StatCard(Modifier.weight(1f), "Điểm danh", attendanceRate,
+                                Icons.Filled.CheckCircle, Success, SuccessTint)
                         }
                     }
                 }
 
-                // My Classes Section Header
+                // My Classes Section
                 item {
                     SlideInFromBottom(index = 2) {
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Filled.School, null, Modifier.size(20.dp), tint = TMixNavy)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Lớp học của tôi", style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold)
-                            }
-                            if (state.isLoading) {
-                                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                            }
-                        }
+                        SectionHeader(
+                            icon = Icons.Filled.School,
+                            title = "Lớp học của tôi",
+                            isLoading = state.isLoading
+                        )
                     }
                 }
 
-                // Class Cards — gradient + badge icon
+                // Class Cards
                 item {
                     SlideInFromBottom(index = 3) {
                         if (state.classes.isEmpty() && !state.isLoading) {
-                            Card(
-                                Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                            ) {
-                                Column(
-                                    Modifier.padding(24.dp).fillMaxWidth(),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Icon(Icons.Filled.School, null, Modifier.size(48.dp), tint = TextSecondary)
-                                    Spacer(Modifier.height(8.dp))
-                                    Text("Chưa có lớp học nào", color = TextSecondary)
-                                    Spacer(Modifier.height(8.dp))
-                                    TextButton(onClick = onCourseClick) {
-                                        Text("Đăng ký khóa học", color = TMixRed, fontWeight = FontWeight.SemiBold)
-                                    }
-                                }
-                            }
+                            EmptyCard(
+                                icon = Icons.Filled.School,
+                                message = "Chưa có lớp học nào",
+                                actionLabel = "Đăng ký khóa học",
+                                onAction = onCourseClick
+                            )
                         } else {
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                                 itemsIndexed(state.classes) { index, classInfo ->
                                     val classId = classInfo.classInfo?.id ?: ""
                                     val progress = state.classProgress[classId] ?: 0f
@@ -244,35 +241,24 @@ fun StudentDashboardScreen(
                     }
                 }
 
-                // Schedule Section Header
+                // Schedule Section
                 item {
                     SlideInFromBottom(index = 4) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.CalendarToday, null, Modifier.size(20.dp), tint = TMixNavy)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Lịch học hôm nay", style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold)
-                        }
+                        SectionHeader(
+                            icon = Icons.Filled.CalendarToday,
+                            title = "Lịch học hôm nay"
+                        )
                     }
                 }
 
-                // Schedule Cards — with timeline
+                // Schedule Cards
                 if (state.schedule.isEmpty() && !state.isLoading) {
                     item {
                         SlideInFromBottom(index = 5) {
-                            Card(
-                                Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                            ) {
-                                Column(
-                                    Modifier.padding(24.dp).fillMaxWidth(),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Icon(Icons.Filled.EventBusy, null, Modifier.size(48.dp), tint = TextSecondary)
-                                    Spacer(Modifier.height(8.dp))
-                                    Text("Hôm nay không có lịch học 🎉", color = TextSecondary)
-                                }
-                            }
+                            EmptyCard(
+                                icon = Icons.Filled.EventBusy,
+                                message = "Hôm nay không có lịch học 🎉"
+                            )
                         }
                     }
                 } else {
@@ -290,25 +276,27 @@ fun StudentDashboardScreen(
                     }
                 }
 
-                // Quick Actions — improved with filled cards
+                // Quick Actions
                 item {
                     SlideInFromBottom(index = 8) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Filled.Bolt, null, Modifier.size(20.dp), tint = TMixNavy)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Thao tác nhanh", style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold)
-                        }
+                        SectionHeader(
+                            icon = Icons.Filled.Bolt,
+                            title = "Thao tác nhanh"
+                        )
                     }
                 }
 
                 item {
                     SlideInFromBottom(index = 9) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                             QuickActionCard(Modifier.weight(1f), Icons.Filled.School,
-                                "Khóa học", "Đăng ký mới", TMixNavy, onClick = onCourseClick)
+                                "Khóa học", "Đăng ký mới",
+                                Brush.linearGradient(listOf(TMixNavy, TMixNavySoft)),
+                                onClick = onCourseClick)
                             QuickActionCard(Modifier.weight(1f), Icons.Filled.MenuBook,
-                                "Tài liệu", "Ôn tập", TMixRed, onClick = onMaterialsClick)
+                                "Tài liệu", "Ôn tập",
+                                Brush.linearGradient(listOf(TMixRed, TMixRedSoft)),
+                                onClick = onMaterialsClick)
                         }
                     }
                 }
@@ -318,73 +306,138 @@ fun StudentDashboardScreen(
 }
 
 // =====================================================
-// POLISHED COMPONENTS (brand-consistent)
+// PREMIUM COMPONENTS
 // =====================================================
 
+/** Section header with icon */
 @Composable
-fun StatCard(modifier: Modifier, label: String, value: String, icon: ImageVector, color: Color) {
+fun SectionHeader(icon: ImageVector, title: String, isLoading: Boolean = false) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(8.dp))
+            Text(title, style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+        }
+        if (isLoading) {
+            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+        }
+    }
+}
+
+/** Empty state card */
+@Composable
+fun EmptyCard(
+    icon: ImageVector, message: String,
+    actionLabel: String? = null, onAction: (() -> Unit)? = null
+) {
+    Card(
+        Modifier.fillMaxWidth(),
+        shape = TMixShapes.CardLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        elevation = CardDefaults.cardElevation(0.dp)
+    ) {
+        Column(
+            Modifier.padding(28.dp).fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(icon, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(10.dp))
+            Text(message, style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+            if (actionLabel != null && onAction != null) {
+                Spacer(Modifier.height(12.dp))
+                TextButton(onClick = onAction) {
+                    Text(actionLabel, color = TMixRed, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+    }
+}
+
+/** Stat card with tinted background + gradient icon circle */
+@Composable
+fun StatCard(
+    modifier: Modifier, label: String, value: String,
+    icon: ImageVector, color: Color, tintBg: Color
+) {
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val bgColor = if (isDark) color.copy(alpha = 0.1f) else tintBg
     Card(
         modifier = modifier,
         shape = TMixShapes.Card,
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(containerColor = bgColor),
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(
             Modifier.padding(14.dp).fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(icon, null, Modifier.size(20.dp), tint = color.copy(alpha = 0.7f))
-            Spacer(Modifier.height(4.dp))
+            // Gradient icon circle
+            Box(
+                Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(color.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, Modifier.size(18.dp), tint = color)
+            }
+            Spacer(Modifier.height(8.dp))
             AnimatedCounterText(
                 valueString = value,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = color
             )
-            Text(label, style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+            Spacer(Modifier.height(2.dp))
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
 
+/** Class card with gradient + depth */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ClassCard(name: String, teacher: String, progress: Float, onClick: () -> Unit = {}) {
     Card(
         onClick = onClick,
-        modifier = Modifier.width(200.dp),
-        shape = TMixShapes.Card,
-        elevation = CardDefaults.cardElevation(4.dp)
+        modifier = Modifier.width(220.dp),
+        shape = TMixShapes.CardLarge,
+        elevation = CardDefaults.cardElevation(6.dp)
     ) {
         Box(
             Modifier.fillMaxWidth()
                 .background(Brush.linearGradient(listOf(TMixNavy, TMixNavySoft)))
-                .padding(16.dp)
+                .padding(18.dp)
         ) {
             Column {
-                // Icon badge
                 Box(
-                    Modifier.size(32.dp).clip(CircleShape).background(Color.White.copy(0.15f)),
+                    Modifier.size(36.dp).clip(CircleShape).background(Color.White.copy(0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Filled.MenuBook, null, Modifier.size(18.dp), tint = Color.White)
                 }
-
-                Spacer(Modifier.height(10.dp))
-
+                Spacer(Modifier.height(14.dp))
                 Text(name, style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold, color = Color.White,
+                    fontWeight = FontWeight.Bold, color = Color.White,
                     maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.height(2.dp))
                 Text(teacher, style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(0.75f), maxLines = 1)
-
-                Spacer(Modifier.height(12.dp))
-
+                    color = Color.White.copy(0.7f), maxLines = 1)
+                Spacer(Modifier.height(16.dp))
                 LinearProgressIndicator(
                     progress = { progress },
-                    modifier = Modifier.fillMaxWidth().height(5.dp).clip(TMixShapes.Chip),
+                    modifier = Modifier.fillMaxWidth().height(5.dp)
+                        .clip(TMixShapes.Badge),
                     color = TMixRed,
-                    trackColor = Color.White.copy(0.25f)
+                    trackColor = Color.White.copy(0.2f)
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(6.dp))
                 Text("${(progress * 100).toInt()}% Hoàn thành",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(0.8f))
@@ -393,47 +446,51 @@ fun ClassCard(name: String, teacher: String, progress: Float, onClick: () -> Uni
     }
 }
 
+/** Schedule card with timeline */
 @Composable
 fun ScheduleCard(
     time: String, className: String, room: String,
     isFirst: Boolean = false, isLast: Boolean = false
 ) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-        // Timeline indicator
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(24.dp)) {
-            if (!isFirst) Box(Modifier.width(2.dp).height(8.dp).background(TMixRed.copy(0.3f)))
+        // Timeline
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(28.dp)) {
+            if (!isFirst) Box(Modifier.width(2.dp).height(8.dp).background(TMixRed.copy(0.2f)))
             else Spacer(Modifier.height(8.dp))
-
-            Box(Modifier.size(10.dp).clip(CircleShape).background(TMixRed),
-                contentAlignment = Alignment.Center) {
+            // Gradient dot
+            Box(
+                Modifier.size(12.dp).clip(CircleShape)
+                    .background(Brush.radialGradient(listOf(TMixRed, TMixRedDark))),
+                contentAlignment = Alignment.Center
+            ) {
                 Box(Modifier.size(4.dp).clip(CircleShape).background(Color.White))
             }
-
-            if (!isLast) Box(Modifier.width(2.dp).height(52.dp).background(TMixRed.copy(0.3f)))
+            if (!isLast) Box(Modifier.width(2.dp).height(56.dp).background(TMixRed.copy(0.2f)))
         }
 
         Spacer(Modifier.width(12.dp))
 
-        // Card content
         Card(
             Modifier.weight(1f).padding(bottom = 8.dp),
             shape = TMixShapes.Card,
-            elevation = CardDefaults.cardElevation(1.dp)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(2.dp)
         ) {
-            Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(className, style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold)
-                    Spacer(Modifier.height(4.dp))
+                    Text(className, style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+                    Spacer(Modifier.height(6.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.AccessTime, null, Modifier.size(14.dp), tint = TextSecondary)
+                        Icon(Icons.Filled.AccessTime, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.width(4.dp))
-                        Text(time, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        Text(time, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                    Spacer(Modifier.height(2.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Filled.LocationOn, null, Modifier.size(14.dp), tint = TextSecondary)
+                        Icon(Icons.Filled.LocationOn, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.width(4.dp))
-                        Text(room, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        Text(room, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -441,31 +498,31 @@ fun ScheduleCard(
     }
 }
 
+/** Quick Action card with gradient brush */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuickActionCard(
     modifier: Modifier = Modifier,
     icon: ImageVector, label: String, subtitle: String,
-    color: Color, onClick: () -> Unit = {}
+    gradient: Brush, onClick: () -> Unit = {}
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.height(80.dp),
-        shape = TMixShapes.Card,
-        elevation = CardDefaults.cardElevation(2.dp),
-        colors = CardDefaults.cardColors(containerColor = color)
+        modifier = modifier.height(84.dp),
+        shape = TMixShapes.CardLarge,
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(
-            Modifier.fillMaxSize().padding(14.dp),
+            Modifier.fillMaxSize().background(gradient).padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                Modifier.size(40.dp).clip(CircleShape).background(Color.White.copy(0.2f)),
+                Modifier.size(42.dp).clip(CircleShape).background(Color.White.copy(0.2f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(icon, null, Modifier.size(22.dp), tint = Color.White)
             }
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(14.dp))
             Column {
                 Text(label, style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold, color = Color.White)
@@ -476,6 +533,7 @@ fun QuickActionCard(
     }
 }
 
+/** Animated counter text */
 @Composable
 fun AnimatedCounterText(
     valueString: String,
@@ -486,39 +544,30 @@ fun AnimatedCounterText(
 ) {
     val numberRegex = Regex("(\\d+)(.*)")
     val matchResult = numberRegex.matchEntire(valueString.trim())
-    
+
     if (matchResult != null) {
         val targetNumber = matchResult.groupValues[1].toIntOrNull() ?: 0
         val suffix = matchResult.groupValues[2]
-        
+
         var isTriggered by remember { mutableStateOf(false) }
         LaunchedEffect(targetNumber) {
-            // Tiny delay to wait for the slide-in entrance animation to settle
             kotlinx.coroutines.delay(250)
             isTriggered = true
         }
-        
+
         val animatedValue by animateIntAsState(
             targetValue = if (isTriggered) targetNumber else 0,
             animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing),
             label = "counter"
         )
-        
+
         Text(
             text = "$animatedValue$suffix",
-            style = style,
-            color = color,
-            fontWeight = fontWeight,
+            style = style, color = color, fontWeight = fontWeight,
             modifier = modifier
         )
     } else {
-        // Fallback for non-numeric (e.g. "N/A")
-        Text(
-            text = valueString,
-            style = style,
-            color = color,
-            fontWeight = fontWeight,
-            modifier = modifier
-        )
+        Text(text = valueString, style = style, color = color,
+            fontWeight = fontWeight, modifier = modifier)
     }
 }

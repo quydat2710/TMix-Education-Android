@@ -98,7 +98,7 @@ fun SplashScreen(
                 initialY = Random.nextFloat(),
                 radius = Random.nextFloat() * 4f + 2f,
                 speed = Random.nextFloat() * 0.5f + 0.2f,
-                color = if (Random.nextBoolean()) TMixRed.copy(alpha = 0.4f) else Color.White.copy(alpha = 0.4f)
+                color = if (Random.nextBoolean()) TMixRed.copy(alpha = 0.4f) else TMixNavy.copy(alpha = 0.4f)
             )
         }
     }
@@ -131,53 +131,50 @@ fun SplashScreen(
     // ==========================================
     // 3. UI RENDERING
     // ==========================================
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF071221))) { // Ultra deep navy
+    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF4F7FB))) { // Bright modern background
 
         // Canvas for Advanced Draw Effects (Particles & Rings)
         Canvas(modifier = Modifier.fillMaxSize()) {
             val canvasWidth = size.width
             val canvasHeight = size.height
 
-            // A. Draw Massive Center Glow Behind Logo
+            // A. Draw Massive Center Glow (Pure White to blend softly into the gray)
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(TMixNavy.copy(alpha = 0.9f), Color.Transparent),
+                    colors = listOf(Color.White, Color.Transparent),
                     center = center,
-                    radius = canvasWidth * backgroundGlowScale
+                    radius = canvasWidth * backgroundGlowScale * 0.9f
                 ),
-                radius = canvasWidth * backgroundGlowScale
+                radius = canvasWidth * backgroundGlowScale * 0.9f
             )
 
-            // B. Draw Futuristic Orbiting Rings
+            // B. Draw Futuristic Orbiting Rings (Minimalist aesthetic)
             val baseRadius = (canvasWidth * 0.35f) * logoScale
             
-            // Inner Red ring (dashed)
+            // Inner ring (dashed thin)
             rotate(ringRotation1, center) {
                 drawCircle(
-                    color = TMixRed.copy(alpha = 0.5f),
+                    color = TMixNavy.copy(alpha = 0.08f),
                     radius = baseRadius + 30f,
                     style = Stroke(
                         width = 4f, 
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(50f, 30f))
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(40f, 30f))
                     )
                 )
             }
-            // Middle White ring (solid thin)
+            // Middle ring (solid ultra-thin)
             rotate(ringRotation2, center) {
                 drawCircle(
-                    color = Color.White.copy(alpha = 0.2f),
-                    radius = baseRadius + 55f,
-                    style = Stroke(
-                        width = 2f,
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(15f, 20f))
-                    )
+                    color = TMixRed.copy(alpha = 0.15f),
+                    radius = baseRadius + 60f,
+                    style = Stroke(width = 2f)
                 )
             }
-            // Outer Navy ring (glowy dashed)
+            // Outer ring (glowy dashed)
             rotate(ringRotation3, center) {
                 drawCircle(
-                    color = TMixNavyLight.copy(alpha = 0.4f),
-                    radius = baseRadius + 90f,
+                    color = TMixNavy.copy(alpha = 0.04f),
+                    radius = baseRadius + 100f,
                     style = Stroke(
                         width = 8f,
                         pathEffect = PathEffect.dashPathEffect(floatArrayOf(100f, 80f))
@@ -185,20 +182,23 @@ fun SplashScreen(
                 )
             }
 
-            // C. Draw Floating Particles
+            // C. Draw Floating Particles (Soft Orbs)
             particles.forEach { p ->
-                // Calculate moving Y relative to time, wrapping around screen
-                val totalDistance = p.speed * continuousTime * 20f
+                val totalDistance = p.speed * continuousTime * 15f
                 val movingY = (p.initialY * canvasHeight - totalDistance) % canvasHeight
                 val finalY = if (movingY < 0) canvasHeight + movingY else movingY
                 val finalX = p.initialX * canvasWidth
                 
-                // Opacity fades near edges
                 val edgeFade = if (finalY < 200f) finalY / 200f else if (finalY > canvasHeight - 200f) (canvasHeight - finalY) / 200f else 1f
                 
+                val orbColor = if (p.color == TMixRed.copy(alpha = 0.4f)) TMixRed else TMixNavy
                 drawCircle(
-                    color = p.color.copy(alpha = p.color.alpha * edgeFade),
-                    radius = p.radius,
+                    brush = Brush.radialGradient(
+                        colors = listOf(orbColor.copy(alpha = 0.15f * edgeFade), Color.Transparent),
+                        center = Offset(finalX, finalY),
+                        radius = p.radius * 6f 
+                    ),
+                    radius = p.radius * 6f,
                     center = Offset(finalX, finalY)
                 )
             }
@@ -214,10 +214,7 @@ fun SplashScreen(
                 .size(160.dp) // Premium size
                 .scale(logoScale)
                 .alpha(logoAlpha)
-                // Multi-layer container to hide white square
-                .background(Color.White.copy(0.15f), CircleShape) // Subtle outer ring
-                .padding(4.dp) // Inner gap
-                .background(Color.White, CircleShape) // PURE WHITE inner to blend logo flawlessly!
+                .background(Color.White, CircleShape) // Pure flat white
                 .padding(24.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -233,23 +230,22 @@ fun SplashScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .align(Alignment.Center)
-                // Pushes text below logo (80dp logo half + 50dp spacing)
                 .offset(y = 150.dp + ((1f - logoAlpha) * 40f).dp) 
                 .alpha(logoAlpha)
         ) {
             Text(
                 text = "TMIX",
                 style = MaterialTheme.typography.displayLarge,
-                fontWeight = FontWeight.Bold,
-                color = TMixRed,
+                fontWeight = FontWeight.ExtraBold,
+                color = TMixNavy,
                 letterSpacing = 4.sp
             )
             Text(
                 text = "EDUCATION",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White,
-                letterSpacing = 12.sp // Premium cinematic wide tracking
+                fontWeight = FontWeight.Bold,
+                color = TMixRed.copy(alpha = 0.9f),
+                letterSpacing = 10.sp 
             )
             
             Spacer(Modifier.height(50.dp))
@@ -261,9 +257,9 @@ fun SplashScreen(
         Text(
             text = "INNOVATION IN EDUCATION",
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 2.sp,
-            color = Color.White.copy(alpha = 0.3f),
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 3.sp,
+            color = TMixNavy.copy(alpha = 0.3f),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 40.dp)
@@ -295,7 +291,7 @@ fun PremiumTripleLoader(alpha: Float) {
     ) {
         val phases = listOf(phase1, phase2, phase3)
         phases.forEachIndexed { index, phase ->
-            val color = if (index == 1) TMixRed else TMixNavyLight
+            val color = if (index == 1) TMixRed else TMixNavy
             Box(
                 modifier = Modifier
                     .width(36.dp)

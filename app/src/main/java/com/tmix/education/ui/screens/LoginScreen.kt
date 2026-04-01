@@ -1,14 +1,18 @@
 package com.tmix.education.ui.screens
 
+import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -26,6 +30,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.tmix.education.R
 import com.tmix.education.ui.theme.*
 import com.tmix.education.ui.viewmodel.LoginViewModel
 import com.tmix.education.ui.viewmodel.LoginUiState
@@ -44,7 +51,7 @@ fun LoginScreen(
 ) {
     val focusManager = LocalFocusManager.current
     val loginState by viewModel.loginState.collectAsState()
-    
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -62,7 +69,9 @@ fun LoginScreen(
         if (visible) 1f else 0f, tween(400, delayMillis = 200), label = "card_a"
     )
     val cardOffsetY by animateFloatAsState(
-        if (visible) 0f else 30f, tween(400, delayMillis = 200, easing = FastOutSlowInEasing), label = "card_y"
+        if (visible) 0f else 30f,
+        tween(400, delayMillis = 200, easing = FastOutSlowInEasing),
+        label = "card_y"
     )
 
     // Shake on error
@@ -73,162 +82,355 @@ fun LoginScreen(
         label = "shake",
         finishedListener = { triggerShake = false }
     )
-    val shakeTranslation = if (triggerShake) kotlin.math.sin(shakeX.toDouble() * Math.PI * 6).toFloat() * 10f else 0f
+    val shakeTranslation =
+        if (triggerShake) kotlin.math.sin(shakeX.toDouble() * Math.PI * 6).toFloat() * 10f else 0f
 
     LaunchedEffect(Unit) { visible = true }
+
+    // Success state
+    var showSuccess by remember { mutableStateOf(false) }
 
     // Handle login state changes
     LaunchedEffect(loginState) {
         when (loginState) {
-            is LoginUiState.Success -> onLoginSuccess(viewModel.isStudent())
+            is LoginUiState.Success -> {
+                showSuccess = true
+                kotlinx.coroutines.delay(1000)
+                onLoginSuccess(viewModel.isStudent())
+            }
+
             is LoginUiState.Error -> triggerShake = true
             else -> {}
         }
     }
-    
+
     val isLoading = loginState is LoginUiState.Loading
     val error = (loginState as? LoginUiState.Error)?.message
-    
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
+            .background(TMixNavyDark) // Base background applies everywhere
+    ) {
+        // Premium Aurora / Glowing Background
+        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+
+            // 1. Base Deep Navy Gradient
+            drawRect(
+                brush = Brush.verticalGradient(
                     colors = listOf(TMixNavy, TMixNavyDark)
                 )
             )
-    ) {
+
+            // 2. Abstract Glowing Orbs (Aurora Effect)
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF38BDF8).copy(alpha = 0.15f), Color.Transparent),
+                    center = androidx.compose.ui.geometry.Offset(w * 0.8f, h * 0.1f),
+                    radius = w * 0.6f
+                ),
+                center = androidx.compose.ui.geometry.Offset(w * 0.8f, h * 0.1f),
+                radius = w * 0.6f
+            )
+
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(TMixRed.copy(alpha = 0.12f), Color.Transparent),
+                    center = androidx.compose.ui.geometry.Offset(w * 0.05f, h * 0.35f),
+                    radius = w * 0.6f
+                ),
+                center = androidx.compose.ui.geometry.Offset(w * 0.05f, h * 0.35f),
+                radius = w * 0.6f
+            )
+
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(TMixNavyLight.copy(alpha = 0.4f), Color.Transparent),
+                    center = androidx.compose.ui.geometry.Offset(w * 0.5f, h * 0.6f),
+                    radius = w * 0.6f
+                ),
+                center = androidx.compose.ui.geometry.Offset(w * 0.5f, h * 0.6f),
+                radius = w * 0.6f
+            )
+
+            // 3. Elegant Subtle Curves (Replaces dot matrix)
+            val path1 = androidx.compose.ui.graphics.Path().apply {
+                moveTo(0f, h * 0.15f)
+                cubicTo(w * 0.4f, h * 0.25f, w * 0.6f, h * 0.05f, w, h * 0.2f)
+            }
+            drawPath(
+                path = path1,
+                color = Color.White.copy(alpha = 0.04f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 3f)
+            )
+
+            val path2 = androidx.compose.ui.graphics.Path().apply {
+                moveTo(-w * 0.2f, h * 0.3f)
+                cubicTo(w * 0.3f, h * 0.4f, w * 0.8f, h * 0.15f, w * 1.2f, h * 0.35f)
+            }
+            drawPath(
+                path = path2,
+                color = Color.White.copy(alpha = 0.03f),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(width = 6f)
+            )
+        }
+
+        // Main Content Layer (Form & Branding)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .imePadding() // Adjust for keyboard automatically
         ) {
-            Spacer(modifier = Modifier.height(80.dp))
-            
-            // Logo Text
-            Text(
-                text = "TMIX",
-                style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.Bold,
-                color = TMixRed,
-                modifier = Modifier.scale(logoScale).alpha(logoAlpha)
-            )
-            Text(
-                text = "EDUCATION",
-                style = MaterialTheme.typography.titleLarge,
+            // Nửa trên (Branding)
+            Box(
+                modifier = Modifier
+                    .weight(1f) // Takes remaining space above card
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                // Logo & Text Branding
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .scale(logoScale)
+                        .alpha(logoAlpha)
+                        .padding(vertical = 24.dp)
+                ) {
+                    // Elevated Logo Container
+                    Surface(
+                        modifier = Modifier.size(100.dp),
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                        color = Color.White,
+                        shadowElevation = 12.dp // Premium depth, keeping pure white
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize().padding(8.dp)) {
+                            Image(
+                                painter = painterResource(id = R.drawable.logo_tmix),
+                                contentDescription = "TMIX Logo",
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "T M I X   E D U C A T I O N",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        letterSpacing = 4.sp
+                    )
+                }
+            }
+
+            // Nửa dưới (Login Form) - Bottom Surface
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        alpha = cardAlpha
+                        translationY = cardOffsetY
+                        translationX = shakeTranslation
+                    },
+                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
                 color = Color.White,
-                letterSpacing = 4.sp,
-                modifier = Modifier.scale(logoScale).alpha(logoAlpha)
-            )
-            
-            Spacer(modifier = Modifier.height(48.dp))
-            
-            // Login Card
-            Card(
-                modifier = Modifier.fillMaxWidth().graphicsLayer {
-                    alpha = cardAlpha
-                    translationY = cardOffsetY
-                    translationX = shakeTranslation
-                },
-                shape = TMixShapes.Card,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                shadowElevation = 0.dp // Flat modern design without harsh shadows
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 40.dp, bottom = 24.dp, start = 32.dp, end = 32.dp)
+                        .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = "Đăng nhập",
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = TMixNavy
                     )
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     Text(
-                        text = "Dành cho Học sinh & Phụ huynh",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "Vui lòng đăng nhập để tiếp tục",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray // Gray text
                     )
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    // Email
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { 
-                            email = it
-                            if (loginState is LoginUiState.Error) {
-                                viewModel.resetState()
-                            }
-                        },
-                        label = { Text("Email") },
-                        leadingIcon = { Icon(Icons.Default.Email, null) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = TMixShapes.TextField,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Next
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
-                        ),
-                        singleLine = true,
-                        enabled = !isLoading
-                    )
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    // Password
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { 
-                            password = it
-                            if (loginState is LoginUiState.Error) {
-                                viewModel.resetState()
-                            }
-                        },
-                        label = { Text("Mật khẩu") },
-                        leadingIcon = { Icon(Icons.Default.Lock, null) },
-                        trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                    null
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = TMixShapes.TextField,
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                focusManager.clearFocus()
-                                viewModel.login(email, password)
-                            }
-                        ),
-                        singleLine = true,
-                        enabled = !isLoading
-                    )
-                    
-                    // Error
-                    error?.let {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = it, 
-                            color = Error, 
-                            style = MaterialTheme.typography.bodySmall
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // Form Container
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        // Email Field (Premium Filled Style)
+                        TextField(
+                            value = email,
+                            onValueChange = {
+                                email = it
+                                if (loginState is LoginUiState.Error) {
+                                    viewModel.resetState()
+                                }
+                            },
+                            label = { Text("Email", color = Color.Gray) },
+                            leadingIcon = { Icon(Icons.Default.Email, "Email", tint = Color.Gray) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp), // 16dp rounded
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color(0xFFF4F5F6),
+                                unfocusedContainerColor = Color(0xFFF4F5F6),
+                                focusedIndicatorColor = Color.Transparent, // No underline/border
+                                unfocusedIndicatorColor = Color.Transparent,
+                                cursorColor = TMixNavy
+                            ),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Email,
+                                imeAction = ImeAction.Next
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                            ),
+                            singleLine = true,
+                            enabled = !isLoading
+                        )
+
+                        // Password Field (Premium Filled Style)
+                        TextField(
+                            value = password,
+                            onValueChange = {
+                                password = it
+                                if (loginState is LoginUiState.Error) {
+                                    viewModel.resetState()
+                                }
+                            },
+                            label = { Text("Mật khẩu", color = Color.Gray) },
+                            leadingIcon = { Icon(Icons.Default.Lock, "Lock", tint = Color.Gray) },
+                            trailingIcon = {
+                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                    Icon(
+                                        if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                        "Toggle Password",
+                                        tint = Color.Gray
+                                    )
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color(0xFFF4F5F6),
+                                unfocusedContainerColor = Color(0xFFF4F5F6),
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                cursorColor = TMixNavy
+                            ),
+                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Password,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    focusManager.clearFocus()
+                                    viewModel.login(email, password)
+                                }
+                            ),
+                            singleLine = true,
+                            enabled = !isLoading
                         )
                     }
-                    
+
+                    // Forgot password link right aligned below the field
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        TextButton(
+                            onClick = onForgotPassword,
+                            enabled = !isLoading,
+                            contentPadding = PaddingValues(
+                                top = 8.dp,
+                                bottom = 8.dp,
+                                start = 8.dp,
+                                end = 0.dp
+                            )
+                        ) {
+                            Text(
+                                "Quên mật khẩu?",
+                                color = TMixNavy,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    // Animated Error Card
+                    AnimatedVisibility(
+                        visible = error != null,
+                        enter = slideInVertically() + fadeIn(),
+                        exit = slideOutVertically() + fadeOut()
+                    ) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Error.copy(alpha = 0.1f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.ErrorOutline,
+                                    null,
+                                    tint = Error,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Text(
+                                    error ?: "",
+                                    color = Error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    // Animated Success Card
+                    AnimatedVisibility(
+                        visible = showSuccess,
+                        enter = slideInVertically() + fadeIn(),
+                        exit = fadeOut()
+                    ) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Success.copy(alpha = 0.12f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.CheckCircle,
+                                    null,
+                                    tint = Success,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Text(
+                                    "Đăng nhập thành công!",
+                                    color = Success,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(24.dp))
-                    
+
                     // Login Button
                     Button(
                         onClick = {
@@ -237,61 +439,93 @@ fun LoginScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp),
-                        shape = TMixShapes.Button,
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp), // Fully rounded feeling
                         colors = ButtonDefaults.buttonColors(containerColor = TMixRed),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 0.dp,
+                            pressedElevation = 0.dp
+                        ), // Flat design
                         enabled = !isLoading
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp), 
+                                modifier = Modifier.size(24.dp),
                                 color = Color.White,
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Text("Đăng nhập", fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "Đăng nhập",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color.White
+                            )
                         }
                     }
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    // Forgot password link
-                    TextButton(
-                        onClick = onForgotPassword,
-                        enabled = !isLoading
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // -- SOCIAL LOGIN DIVIDER --
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFF0F0F0))
                         Text(
-                            "Quên mật khẩu?",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.bodyMedium
+                            "  Hoặc đăng nhập bằng  ",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray,
+                            fontWeight = FontWeight.Medium
                         )
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFF0F0F0))
                     }
-                    
-                    Spacer(modifier = Modifier.height(4.dp))
-                    
-                    // Biometric (placeholder - can be implemented later)
-                    OutlinedButton(
-                        onClick = { /* TODO: Implement biometric auth */ },
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Social Buttons Row (Circles)
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = TMixShapes.Button,
-                        enabled = !isLoading
+                        horizontalArrangement = Arrangement.Center
                     ) {
-                        Icon(Icons.Default.Fingerprint, null, Modifier.size(24.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Đăng nhập bằng vân tay")
+                        // Facebook Circle
+                        OutlinedIconButton(
+                            onClick = { /* TODO: Facebook */ },
+                            modifier = Modifier.size(54.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                Color(0xFFE2E8F0)
+                            ),
+                            shape = androidx.compose.foundation.shape.CircleShape
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_facebook),
+                                contentDescription = "Facebook Login",
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+
+                        Spacer(Modifier.width(24.dp))
+
+                        // Google Circle
+                        OutlinedIconButton(
+                            onClick = { /* TODO: Google */ },
+                            modifier = Modifier.size(54.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                Color(0xFFE2E8F0)
+                            ),
+                            shape = androidx.compose.foundation.shape.CircleShape
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_google),
+                                contentDescription = "Google Login",
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
                     }
                 }
             }
-            
-            Spacer(modifier = Modifier.weight(1f))
-            
-            Text(
-                text = "© 2026 TMIX Education",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.White.copy(alpha = 0.6f)
-            )
-            
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

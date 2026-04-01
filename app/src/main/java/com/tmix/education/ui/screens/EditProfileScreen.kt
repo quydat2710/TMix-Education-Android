@@ -174,19 +174,22 @@ fun EditProfileScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Avatar section — clickable with real image
-            Card(shape = TMixShapes.Card) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                    // Sử dụng màu nền xám nhạt phẳng giống như trong mockup thay vì Card có đổ bóng
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                    .clickable { imagePickerLauncher.launch("image/*") }
+                    .padding(vertical = 24.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Column(
-                    Modifier.fillMaxWidth().padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(CircleShape)
-                            .background(TMixNavy.copy(alpha = 0.1f))
-                            .clickable { imagePickerLauncher.launch("image/*") },
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.size(100.dp)) {
+                        // Ảnh đại diện
                         when {
                             selectedImageUri != null -> {
                                 AsyncImage(
@@ -205,32 +208,47 @@ fun EditProfileScreen(
                                 )
                             }
                             else -> {
-                                Text(
-                                    (currentUser?.name ?: "?").split(" ").lastOrNull()?.firstOrNull()?.toString() ?: "?",
-                                    style = MaterialTheme.typography.headlineLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = TMixNavy
-                                )
+                                Box(
+                                    Modifier.fillMaxSize().clip(CircleShape).background(TMixNavy.copy(alpha = 0.1f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        (currentUser?.name ?: "?").split(" ").lastOrNull()?.firstOrNull()?.toString() ?: "?",
+                                        style = MaterialTheme.typography.headlineLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        color = TMixNavy
+                                    )
+                                }
                             }
                         }
-                        // Camera overlay
+                        
+                        // Nút hình máy ảnh đỏ góc dưới phải (Red Camera Badge)
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .size(32.dp)
+                                .offset(x = 2.dp, y = 2.dp)
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surface) // viền trắng tạo khoảng cách
+                                .padding(2.dp)
                                 .clip(CircleShape)
                                 .background(TMixRed),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                Icons.Default.CameraAlt, null,
-                                modifier = Modifier.size(18.dp),
+                                Icons.Default.CameraAlt, 
+                                contentDescription = "Đổi ảnh",
+                                modifier = Modifier.size(14.dp),
                                 tint = Color.White
                             )
                         }
                     }
-                    Spacer(Modifier.height(8.dp))
-                    Text("Nhấn để thay đổi ảnh đại diện", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = "Nhấn để thay đổi ảnh đại diện", 
+                        style = MaterialTheme.typography.bodyMedium, 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
             
