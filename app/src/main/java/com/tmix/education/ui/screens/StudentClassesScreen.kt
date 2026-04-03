@@ -92,24 +92,57 @@ fun StudentClassesScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Summary Header
+                    // Summary Header — Glassmorphic Premium
                     item {
+                        val isDark = androidx.compose.foundation.isSystemInDarkTheme()
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
-                                .background(Brush.linearGradient(listOf(TMixNavy, TMixNavySoft)))
-                                .padding(vertical = 24.dp)
+                                .background(
+                                    Brush.linearGradient(
+                                        colors = if (isDark) listOf(Color(0xFF0D1B2E), Color(0xFF1A2B45), Color(0xFF0F2035))
+                                        else listOf(TMixNavy, Color(0xFF2A4A7A), TMixNavySoft)
+                                    )
+                                )
                         ) {
+                            // Decorative floating circles
+                            androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
+                                drawCircle(
+                                    color = Color.White.copy(alpha = 0.04f),
+                                    radius = 80.dp.toPx(),
+                                    center = androidx.compose.ui.geometry.Offset(size.width * 0.9f, size.height * -0.2f)
+                                )
+                                drawCircle(
+                                    color = Color.White.copy(alpha = 0.03f),
+                                    radius = 60.dp.toPx(),
+                                    center = androidx.compose.ui.geometry.Offset(size.width * 0.1f, size.height * 1.3f)
+                                )
+                                drawCircle(
+                                    color = Color.White.copy(alpha = 0.05f),
+                                    radius = 30.dp.toPx(),
+                                    center = androidx.compose.ui.geometry.Offset(size.width * 0.5f, size.height * 0.2f)
+                                )
+                            }
+
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
                                 horizontalArrangement = Arrangement.SpaceEvenly,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("${classes.size}", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = Color.White)
+                                    Text(
+                                        "${classes.size}",
+                                        style = MaterialTheme.typography.headlineLarge,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color.White
+                                    )
                                     Spacer(Modifier.height(4.dp))
-                                    Text("Tổng số lớp", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(0.8f))
+                                    Text(
+                                        "Tổng số lớp",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color.White.copy(0.8f)
+                                    )
                                 }
                                 
                                 // Vách ngăn mờ (Translucent Divider)
@@ -117,7 +150,7 @@ fun StudentClassesScreen(
                                     modifier = Modifier
                                         .width(1.dp)
                                         .height(44.dp)
-                                        .background(Color.White.copy(alpha = 0.2f))
+                                        .background(Color.White.copy(alpha = 0.12f))
                                 )
                                 
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -125,9 +158,18 @@ fun StudentClassesScreen(
                                         val prog = state.classProgress[it.classInfo.id] ?: 0f
                                         it.isActive && prog < 1f && it.classInfo.status != "closed"
                                     }
-                                    Text("$activeCount", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold, color = TMixRed)
+                                    Text(
+                                        "$activeCount",
+                                        style = MaterialTheme.typography.headlineLarge,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = TMixRedLight
+                                    )
                                     Spacer(Modifier.height(4.dp))
-                                    Text("Đang học", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(0.8f))
+                                    Text(
+                                        "Đang học",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color.White.copy(0.8f)
+                                    )
                                 }
                             }
                         }

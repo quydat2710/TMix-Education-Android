@@ -86,6 +86,10 @@ data class AttendanceStats(
 ) {
     val attendanceRate: Float
         get() = if (total > 0) present.toFloat() / total else 0f
+
+    /** Effective rate: present + late count as "attended" */
+    val effectiveAttendanceRate: Float
+        get() = if (total > 0) (present + late).toFloat() / total else 0f
 }
 
 /**

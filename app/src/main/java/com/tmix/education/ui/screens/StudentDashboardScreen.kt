@@ -1,6 +1,7 @@
 package com.tmix.education.ui.screens
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -188,7 +190,7 @@ fun StudentDashboardScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             val classCount = state.classes.size.toString()
                             val attendanceRate = state.attendanceStats?.let {
-                                if (it.total > 0) "${(it.present * 100 / it.total)}%" else "0%"
+                                if (it.total > 0) "${((it.present + it.late) * 100 / it.total)}%" else "0%"
                             } ?: "N/A"
 
                             StatCard(Modifier.weight(1f), "Số lớp", classCount,

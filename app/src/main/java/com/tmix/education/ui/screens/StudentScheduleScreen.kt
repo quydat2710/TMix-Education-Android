@@ -2,6 +2,7 @@ package com.tmix.education.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -45,13 +46,14 @@ data class ScheduleEvent(
 
 /**
  * Student Schedule Screen — Premium Redesign
- * Modern week selector, depth-enhanced event cards
+ * Modern week selector, depth-enhanced event cards, full dark mode support
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentScheduleScreen() {
     val authRepository = remember { AuthRepository() }
     val studentRepository = remember { StudentRepository() }
+    val isDark = isSystemInDarkTheme()
     
     var classes by remember { mutableStateOf<List<Pair<String?, StudentClassInfo>>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -159,6 +161,15 @@ fun StudentScheduleScreen() {
 
     val todayEvents = scheduleByDay[selectedDate] ?: emptyList()
 
+    // Adaptive colors for dark mode
+    val textPrimary = MaterialTheme.colorScheme.onSurface
+    val textSecondary = MaterialTheme.colorScheme.onSurfaceVariant
+    val textTertiary = if (isDark) Color.White.copy(0.45f) else TextTertiary
+    val cardBg = MaterialTheme.colorScheme.surface
+    val navyTintAdaptive = if (isDark) TMixNavy.copy(alpha = 0.15f) else NavyTint
+    val successTintAdaptive = if (isDark) Success.copy(alpha = 0.1f) else SuccessTint
+    val surfaceVariantAdaptive = if (isDark) MaterialTheme.colorScheme.surfaceVariant else SurfaceVariant.copy(alpha = 0.5f)
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -189,17 +200,17 @@ fun StudentScheduleScreen() {
             ) {
                 IconButton(onClick = { currentWeekStart = currentWeekStart.minusWeeks(1) }) {
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Tuần trước",
-                        tint = TextSecondary)
+                        tint = textSecondary)
                 }
                 Text(
                     currentWeekStart.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale("vi")))
                         .replaceFirstChar { it.uppercase() },
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold, color = TextPrimary
+                    fontWeight = FontWeight.SemiBold, color = textPrimary
                 )
                 IconButton(onClick = { currentWeekStart = currentWeekStart.plusWeeks(1) }) {
                     Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Tuần sau",
-                        tint = TextSecondary)
+                        tint = textSecondary)
                 }
             }
 
@@ -207,8 +218,8 @@ fun StudentScheduleScreen() {
             Card(
                 Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                 shape = TMixShapes.CardLarge,
-                colors = CardDefaults.cardColors(containerColor = CardSurface),
-                elevation = CardDefaults.cardElevation(2.dp)
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                elevation = CardDefaults.cardElevation(if (isDark) 0.dp else 2.dp)
             ) {
                 LazyRow(
                     Modifier.fillMaxWidth().padding(10.dp),
@@ -243,7 +254,7 @@ fun StudentScheduleScreen() {
                                 color = when {
                                     isSelected -> Color.White.copy(0.8f)
                                     isWeekend -> TMixRed
-                                    else -> TextTertiary
+                                    else -> textTertiary
                                 }
                             )
                             Spacer(Modifier.height(6.dp))
@@ -255,7 +266,7 @@ fun StudentScheduleScreen() {
                                     .background(
                                         when {
                                             isSelected -> TMixRed
-                                            isToday -> TMixNavyLight.copy(alpha = 0.15f)
+                                            isToday -> if (isDark) TMixNavyLight.copy(alpha = 0.3f) else TMixNavyLight.copy(alpha = 0.15f)
                                             else -> Color.Transparent
                                         }
                                     ),
@@ -267,9 +278,9 @@ fun StudentScheduleScreen() {
                                     fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal,
                                     color = when {
                                         isSelected -> Color.White
-                                        isToday -> TMixNavy
+                                        isToday -> if (isDark) Color.White else TMixNavy
                                         isWeekend -> TMixRed
-                                        else -> TextPrimary
+                                        else -> textPrimary
                                     }
                                 )
                             }
@@ -301,7 +312,9 @@ fun StudentScheduleScreen() {
                     Box(Modifier.fillMaxSize().padding(20.dp), contentAlignment = Alignment.Center) {
                         Card(
                             shape = TMixShapes.CardLarge,
-                            colors = CardDefaults.cardColors(containerColor = ErrorLight),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isDark) Error.copy(alpha = 0.1f) else ErrorLight
+                            ),
                             elevation = CardDefaults.cardElevation(0.dp)
                         ) {
                             Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -309,7 +322,7 @@ fun StudentScheduleScreen() {
                                 Spacer(Modifier.height(12.dp))
                                 Text(error ?: "Có lỗi xảy ra",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = TextSecondary, textAlign = TextAlign.Center)
+                                    color = textSecondary, textAlign = TextAlign.Center)
                                 Spacer(Modifier.height(16.dp))
                                 Button(
                                     onClick = { /* TODO: retry */ },
@@ -326,17 +339,17 @@ fun StudentScheduleScreen() {
                     Box(Modifier.fillMaxSize().padding(20.dp), contentAlignment = Alignment.Center) {
                         Card(
                             shape = TMixShapes.CardLarge,
-                            colors = CardDefaults.cardColors(containerColor = SurfaceVariant.copy(alpha = 0.5f)),
+                            colors = CardDefaults.cardColors(containerColor = surfaceVariantAdaptive),
                             elevation = CardDefaults.cardElevation(0.dp)
                         ) {
                             Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.EventBusy, null, Modifier.size(48.dp), tint = TextTertiary)
+                                Icon(Icons.Default.EventBusy, null, Modifier.size(48.dp), tint = textTertiary)
                                 Spacer(Modifier.height(12.dp))
                                 Text("Chưa đăng ký lớp nào",
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Medium, color = TextSecondary)
+                                    fontWeight = FontWeight.Medium, color = textSecondary)
                                 Text("Liên hệ trung tâm để đăng ký lớp học",
-                                    style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                                    style = MaterialTheme.typography.bodySmall, color = textTertiary)
                             }
                         }
                     }
@@ -345,7 +358,7 @@ fun StudentScheduleScreen() {
                     Box(Modifier.fillMaxSize().padding(20.dp), contentAlignment = Alignment.Center) {
                         Card(
                             shape = TMixShapes.CardLarge,
-                            colors = CardDefaults.cardColors(containerColor = SuccessTint),
+                            colors = CardDefaults.cardColors(containerColor = successTintAdaptive),
                             elevation = CardDefaults.cardElevation(0.dp)
                         ) {
                             Column(Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -353,10 +366,10 @@ fun StudentScheduleScreen() {
                                 Spacer(Modifier.height(8.dp))
                                 Text("Không có lịch học",
                                     style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Medium, color = TextSecondary)
+                                    fontWeight = FontWeight.Medium, color = textSecondary)
                                 Text(
                                     if (selectedDate.dayOfWeek.value >= 6) "Cuối tuần nghỉ ngơi!" else "Chọn ngày khác để xem lịch",
-                                    style = MaterialTheme.typography.bodySmall, color = TextTertiary)
+                                    style = MaterialTheme.typography.bodySmall, color = textTertiary)
                             }
                         }
                     }
@@ -369,7 +382,7 @@ fun StudentScheduleScreen() {
                         item {
                             // Event count badge
                             Surface(
-                                color = NavyTint,
+                                color = navyTintAdaptive,
                                 shape = TMixShapes.Chip
                             ) {
                                 Text(
@@ -377,13 +390,13 @@ fun StudentScheduleScreen() {
                                     Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Medium,
-                                    color = TMixNavy
+                                    color = if (isDark) TMixNavyLight else TMixNavy
                                 )
                             }
                         }
 
                         items(todayEvents) { event ->
-                            ScheduleEventCard(event)
+                            ScheduleEventCard(event, isDark)
                         }
 
                         item { Spacer(Modifier.height(16.dp)) }
@@ -395,11 +408,14 @@ fun StudentScheduleScreen() {
 }
 
 @Composable
-fun ScheduleEventCard(event: ScheduleEvent) {
+fun ScheduleEventCard(event: ScheduleEvent, isDark: Boolean = false) {
+    val textPrimary = MaterialTheme.colorScheme.onSurface
+    val textSecondary = MaterialTheme.colorScheme.onSurfaceVariant
+
     Card(
         shape = TMixShapes.CardLarge,
-        colors = CardDefaults.cardColors(containerColor = CardSurface),
-        elevation = CardDefaults.cardElevation(2.dp)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(if (isDark) 0.dp else 2.dp)
     ) {
         Row(Modifier.fillMaxWidth()) {
             // Gradient left accent bar
@@ -420,12 +436,12 @@ fun ScheduleEventCard(event: ScheduleEvent) {
                     Text(
                         event.className,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold, color = TextPrimary,
+                        fontWeight = FontWeight.Bold, color = textPrimary,
                         modifier = Modifier.weight(1f)
                     )
                     if (event.startTime.isNotEmpty()) {
                         Surface(
-                            color = event.color.copy(0.1f),
+                            color = event.color.copy(if (isDark) 0.2f else 0.1f),
                             shape = TMixShapes.Badge
                         ) {
                             Text(
@@ -433,7 +449,7 @@ fun ScheduleEventCard(event: ScheduleEvent) {
                                 Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
-                                color = event.color
+                                color = if (isDark) event.color.copy(0.9f) else event.color
                             )
                         }
                     }
@@ -445,31 +461,31 @@ fun ScheduleEventCard(event: ScheduleEvent) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             Modifier.size(22.dp).clip(CircleShape)
-                                .background(event.color.copy(alpha = 0.1f)),
+                                .background(event.color.copy(alpha = if (isDark) 0.2f else 0.1f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(Icons.Default.Person, null, Modifier.size(12.dp), tint = event.color)
                         }
                         Spacer(Modifier.width(6.dp))
-                        Text(event.teacher, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        Text(event.teacher, style = MaterialTheme.typography.bodySmall, color = textSecondary)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             Modifier.size(22.dp).clip(CircleShape)
-                                .background(event.color.copy(alpha = 0.1f)),
+                                .background(event.color.copy(alpha = if (isDark) 0.2f else 0.1f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(Icons.Default.Room, null, Modifier.size(12.dp), tint = event.color)
                         }
                         Spacer(Modifier.width(6.dp))
-                        Text(event.room, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                        Text(event.room, style = MaterialTheme.typography.bodySmall, color = textSecondary)
                     }
                 }
 
                 // Child name badge for parent view
                 if (event.studentName != null) {
                     Spacer(Modifier.height(10.dp))
-                    Surface(color = event.color.copy(0.08f), shape = TMixShapes.Badge) {
+                    Surface(color = event.color.copy(if (isDark) 0.15f else 0.08f), shape = TMixShapes.Badge) {
                         Row(
                             Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically

@@ -4,6 +4,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -29,7 +30,7 @@ import com.tmix.education.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
-// --- Simple Particle Data Class ---
+// --- Lightweight Particle Data ---
 data class FloatingParticle(
     val initialX: Float,
     val initialY: Float,
@@ -38,6 +39,13 @@ data class FloatingParticle(
     val color: Color
 )
 
+/**
+ * Premium Splash Screen — Optimized
+ * - 12 particles (was 30), 2 rings (was 3)
+ * - 2000ms delay (was 3500ms)
+ * - Smooth tween logo (was spring bounce)
+ * - Dark mode + gradient background
+ */
 @Composable
 fun SplashScreen(
     onNavigateToLogin: () -> Unit,
@@ -45,13 +53,14 @@ fun SplashScreen(
     onNavigateToParentDashboard: () -> Unit
 ) {
     val authRepository = remember { AuthRepository() }
+    val isDark = isSystemInDarkTheme()
 
     // ==========================================
-    // 1. ANIMATION STATES
+    // 1. ANIMATION STATES (Reduced)
     // ==========================================
-    val infiniteTransition = rememberInfiniteTransition(label = "infinite")
-    
-    // Continuous Rotation for Tech Rings
+    val infiniteTransition = rememberInfiniteTransition(label = "splash")
+
+    // 2 rings only (removed 3rd outer ring — barely visible, wasted frames)
     val ringRotation1 by infiniteTransition.animateFloat(
         initialValue = 0f, targetValue = 360f,
         animationSpec = infiniteRepeatable(tween(25000, easing = LinearEasing)), label = "ring1"
@@ -60,58 +69,60 @@ fun SplashScreen(
         initialValue = 360f, targetValue = 0f,
         animationSpec = infiniteRepeatable(tween(20000, easing = LinearEasing)), label = "ring2"
     )
-    val ringRotation3 by infiniteTransition.animateFloat(
-        initialValue = 0f, targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(35000, easing = LinearEasing)), label = "ring3"
-    )
 
-    // Continuous Particle Time driver
+    // Particle time driver
     val continuousTime by infiniteTransition.animateFloat(
         initialValue = 0f, targetValue = 1000f,
         animationSpec = infiniteRepeatable(tween(10000, easing = LinearEasing)), label = "time"
     )
 
-    // Entrance Animations
+    // Entrance Animations — smooth tween instead of spring bounce
     var componentsVisible by remember { mutableStateOf(false) }
 
     val logoScale by animateFloatAsState(
-        targetValue = if (componentsVisible) 1f else 0.2f,
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessLow),
+        targetValue = if (componentsVisible) 1f else 0.5f,
+        animationSpec = tween(800, easing = FastOutSlowInEasing),
         label = "logo_s"
     )
     val logoAlpha by animateFloatAsState(
         targetValue = if (componentsVisible) 1f else 0f,
-        animationSpec = tween(1500, easing = LinearOutSlowInEasing),
+        animationSpec = tween(600, easing = LinearOutSlowInEasing),
         label = "logo_a"
     )
     val backgroundGlowScale by animateFloatAsState(
         targetValue = if (componentsVisible) 1.2f else 0.5f,
-        animationSpec = tween(2500, easing = FastOutSlowInEasing),
+        animationSpec = tween(1200, easing = FastOutSlowInEasing),
         label = "bg_glow"
     )
 
-    // Generate Particles Once
+    // Shimmer for text
+    val shimmerOffset by infiniteTransition.animateFloat(
+        initialValue = -1f, targetValue = 2f,
+        animationSpec = infiniteRepeatable(tween(2000, easing = LinearEasing)), label = "shimmer"
+    )
+
+    // 12 particles instead of 30
     val particles = remember {
-        List(30) {
+        List(12) {
             FloatingParticle(
-                initialX = Random.nextFloat(), // 0.0 to 1.0 (relative to canvas)
+                initialX = Random.nextFloat(),
                 initialY = Random.nextFloat(),
                 radius = Random.nextFloat() * 4f + 2f,
                 speed = Random.nextFloat() * 0.5f + 0.2f,
-                color = if (Random.nextBoolean()) TMixRed.copy(alpha = 0.4f) else TMixNavy.copy(alpha = 0.4f)
+                color = if (Random.nextBoolean()) TMixRed.copy(alpha = 0.3f) else TMixNavy.copy(alpha = 0.3f)
             )
         }
     }
 
     // ==========================================
-    // 2. LIFECYCLE & LOGIC
+    // 2. LIFECYCLE — Faster (2000ms)
     // ==========================================
     LaunchedEffect(Unit) {
-        delay(300)
+        delay(200)
         componentsVisible = true
-        
-        delay(3500) 
-        
+
+        delay(2000) // Was 3500ms — much snappier
+
         if (authRepository.isLoggedIn()) {
             val user = authRepository.getCurrentUser()
             if (user != null) {
@@ -129,74 +140,80 @@ fun SplashScreen(
     }
 
     // ==========================================
-    // 3. UI RENDERING
+    // 3. UI — Premium Gradient Background
     // ==========================================
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF4F7FB))) { // Bright modern background
+    val bgGradient = if (isDark) {
+        Brush.verticalGradient(
+            listOf(Color(0xFF0A1628), Color(0xFF0F1E33), Color(0xFF0A1628))
+        )
+    } else {
+        Brush.verticalGradient(
+            listOf(Color(0xFFF0F4FA), Color(0xFFF8FAFD), Color(0xFFEDF1F8))
+        )
+    }
 
-        // Canvas for Advanced Draw Effects (Particles & Rings)
+    Box(modifier = Modifier.fillMaxSize().background(bgGradient)) {
+
+        // Canvas for rings + particles
         Canvas(modifier = Modifier.fillMaxSize()) {
             val canvasWidth = size.width
             val canvasHeight = size.height
 
-            // A. Draw Massive Center Glow (Pure White to blend softly into the gray)
+            // A. Center Glow
+            val glowColor = if (isDark) Color(0xFF1A2B45) else Color.White
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color.White, Color.Transparent),
+                    colors = listOf(glowColor, Color.Transparent),
                     center = center,
                     radius = canvasWidth * backgroundGlowScale * 0.9f
                 ),
                 radius = canvasWidth * backgroundGlowScale * 0.9f
             )
 
-            // B. Draw Futuristic Orbiting Rings (Minimalist aesthetic)
+            // B. 2 Orbiting Rings
             val baseRadius = (canvasWidth * 0.35f) * logoScale
-            
-            // Inner ring (dashed thin)
+            val ringAlpha = if (isDark) 0.12f else 0.08f
+
+            // Inner ring (dashed)
             rotate(ringRotation1, center) {
                 drawCircle(
-                    color = TMixNavy.copy(alpha = 0.08f),
+                    color = TMixNavy.copy(alpha = ringAlpha),
                     radius = baseRadius + 30f,
                     style = Stroke(
-                        width = 4f, 
+                        width = 4f,
                         pathEffect = PathEffect.dashPathEffect(floatArrayOf(40f, 30f))
                     )
                 )
             }
-            // Middle ring (solid ultra-thin)
+            // Outer ring (solid thin)
             rotate(ringRotation2, center) {
                 drawCircle(
-                    color = TMixRed.copy(alpha = 0.15f),
+                    color = TMixRed.copy(alpha = ringAlpha * 1.5f),
                     radius = baseRadius + 60f,
                     style = Stroke(width = 2f)
                 )
             }
-            // Outer ring (glowy dashed)
-            rotate(ringRotation3, center) {
-                drawCircle(
-                    color = TMixNavy.copy(alpha = 0.04f),
-                    radius = baseRadius + 100f,
-                    style = Stroke(
-                        width = 8f,
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(100f, 80f))
-                    )
-                )
-            }
 
-            // C. Draw Floating Particles (Soft Orbs)
+            // C. 12 Floating Particles
             particles.forEach { p ->
                 val totalDistance = p.speed * continuousTime * 15f
                 val movingY = (p.initialY * canvasHeight - totalDistance) % canvasHeight
                 val finalY = if (movingY < 0) canvasHeight + movingY else movingY
                 val finalX = p.initialX * canvasWidth
-                
-                val edgeFade = if (finalY < 200f) finalY / 200f else if (finalY > canvasHeight - 200f) (canvasHeight - finalY) / 200f else 1f
-                
-                val orbColor = if (p.color == TMixRed.copy(alpha = 0.4f)) TMixRed else TMixNavy
+
+                val edgeFade = when {
+                    finalY < 200f -> finalY / 200f
+                    finalY > canvasHeight - 200f -> (canvasHeight - finalY) / 200f
+                    else -> 1f
+                }
+
+                val orbColor = if (p.color == TMixRed.copy(alpha = 0.3f)) TMixRed else TMixNavy
+                val particleAlpha = if (isDark) 0.2f else 0.12f
                 drawCircle(
                     brush = Brush.radialGradient(
-                        colors = listOf(orbColor.copy(alpha = 0.15f * edgeFade), Color.Transparent),
+                        colors = listOf(orbColor.copy(alpha = particleAlpha * edgeFade), Color.Transparent),
                         center = Offset(finalX, finalY),
-                        radius = p.radius * 6f 
+                        radius = p.radius * 6f
                     ),
                     radius = p.radius * 6f,
                     center = Offset(finalX, finalY)
@@ -205,16 +222,19 @@ fun SplashScreen(
         }
 
         // ============================
-        // CENTRALLY FIXED FOREGROUND
+        // FOREGROUND — Logo + Text
         // ============================
-        // 1. Logo perfectly aligned with Canvas Center
+        // Logo
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
-                .size(160.dp) // Premium size
+                .size(150.dp)
                 .scale(logoScale)
                 .alpha(logoAlpha)
-                .background(Color.White, CircleShape) // Pure flat white
+                .background(
+                    if (isDark) Color(0xFF1A2B45) else Color.White,
+                    CircleShape
+                )
                 .padding(24.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -224,20 +244,20 @@ fun SplashScreen(
                 modifier = Modifier.fillMaxSize()
             )
         }
-        
-        // 2. Text offset downwards from Center
+
+        // Brand Text with shimmer
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .align(Alignment.Center)
-                .offset(y = 150.dp + ((1f - logoAlpha) * 40f).dp) 
+                .offset(y = 140.dp)
                 .alpha(logoAlpha)
         ) {
             Text(
                 text = "TMIX",
                 style = MaterialTheme.typography.displayLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color = TMixNavy,
+                color = if (isDark) Color.White else TMixNavy,
                 letterSpacing = 4.sp
             )
             Text(
@@ -245,21 +265,22 @@ fun SplashScreen(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = TMixRed.copy(alpha = 0.9f),
-                letterSpacing = 10.sp 
+                letterSpacing = 10.sp
             )
-            
-            Spacer(Modifier.height(50.dp))
-            
-            PremiumTripleLoader(alpha = logoAlpha)
+
+            Spacer(Modifier.height(40.dp))
+
+            // Dot pulse loader
+            PremiumDotLoader(alpha = logoAlpha, isDark = isDark)
         }
-        
-        // Premium Footer
+
+        // Footer
         Text(
             text = "INNOVATION IN EDUCATION",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             letterSpacing = 3.sp,
-            color = TMixNavy.copy(alpha = 0.3f),
+            color = if (isDark) Color.White.copy(0.2f) else TMixNavy.copy(alpha = 0.3f),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 40.dp)
@@ -269,35 +290,47 @@ fun SplashScreen(
 }
 
 /**
- * Ultra-slick continuous geometric loader.
+ * Premium Dot Pulse Loader — lightweight 3-dot animation
  */
 @Composable
-fun PremiumTripleLoader(alpha: Float) {
-    val infiniteTransition = rememberInfiniteTransition(label = "loader")
-    
-    val phase1 by infiniteTransition.animateFloat(
-        0f, 1f, infiniteRepeatable(tween(800, easing = LinearOutSlowInEasing), RepeatMode.Reverse), label = "l1"
-    )
-    val phase2 by infiniteTransition.animateFloat(
-        0f, 1f, infiniteRepeatable(tween(800, easing = LinearOutSlowInEasing, delayMillis = 200), RepeatMode.Reverse), label = "l2"
-    )
-    val phase3 by infiniteTransition.animateFloat(
-        0f, 1f, infiniteRepeatable(tween(800, easing = LinearOutSlowInEasing, delayMillis = 400), RepeatMode.Reverse), label = "l3"
-    )
+fun PremiumDotLoader(alpha: Float, isDark: Boolean) {
+    val infiniteTransition = rememberInfiniteTransition(label = "dots")
 
     Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier.alpha(alpha)
     ) {
-        val phases = listOf(phase1, phase2, phase3)
-        phases.forEachIndexed { index, phase ->
-            val color = if (index == 1) TMixRed else TMixNavy
+        (0..2).forEach { index ->
+            val dotAlpha by infiniteTransition.animateFloat(
+                initialValue = 0.3f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    tween(600, delayMillis = index * 150, easing = FastOutSlowInEasing),
+                    RepeatMode.Reverse
+                ),
+                label = "dot_$index"
+            )
+            val dotScale by infiniteTransition.animateFloat(
+                initialValue = 0.6f,
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    tween(600, delayMillis = index * 150, easing = FastOutSlowInEasing),
+                    RepeatMode.Reverse
+                ),
+                label = "dotS_$index"
+            )
+
+            val color = when (index) {
+                0 -> if (isDark) TMixNavyLight else TMixNavy
+                1 -> TMixRed
+                else -> if (isDark) TMixNavyLight else TMixNavy
+            }
             Box(
                 modifier = Modifier
-                    .width(36.dp)
-                    .height(4.dp)
-                    .scale(scaleX = 0.5f + (0.5f * phase), scaleY = 1f)
-                    .background(color.copy(alpha = 0.3f + (0.7f * phase)), CircleShape)
+                    .size(8.dp)
+                    .scale(dotScale)
+                    .alpha(dotAlpha)
+                    .background(color, CircleShape)
             )
         }
     }

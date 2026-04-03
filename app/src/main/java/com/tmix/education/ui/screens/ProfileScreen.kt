@@ -222,7 +222,7 @@ fun ProfileScreen(
                             Modifier.fillMaxWidth().clickable { themeManager.setDarkMode(!isDarkMode) }.padding(horizontal = 20.dp, vertical = 16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.DarkMode, null, Modifier.size(24.dp), tint = TMixNavy)
+                            Icon(Icons.Default.DarkMode, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(16.dp))
                             Text("Chế độ tối", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
                             Switch(
@@ -344,7 +344,7 @@ fun ExpandedProfileCard(
                     Modifier
                         .size(80.dp)
                         .clip(CircleShape)
-                        .border(1.5.dp, TMixNavy, CircleShape)
+                        .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                         .clickable { onChangeAvatar() },
                     contentAlignment = Alignment.Center
@@ -452,7 +452,7 @@ fun CollapsedTopBar(
                 Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .border(1.dp, TMixNavy, CircleShape)
+                    .border(1.dp, MaterialTheme.colorScheme.primary, CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
@@ -506,7 +506,7 @@ fun ProfileMenuItem(icon: ImageVector, title: String, trailing: String? = null, 
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, null, Modifier.size(24.dp), tint = TMixNavy) 
+        Icon(icon, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.width(16.dp))
         Text(title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
         if (trailing != null) {

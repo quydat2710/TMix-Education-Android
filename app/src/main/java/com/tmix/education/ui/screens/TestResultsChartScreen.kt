@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -52,6 +53,7 @@ import java.util.*
 
 /**
  * Test Results Chart Screen - Biểu đồ kết quả học tập
+ * Full dark mode support
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +64,7 @@ fun TestResultsChartScreen(
 ) {
     val historyState by testViewModel.attemptHistoryState.collectAsState()
     var selectedSkillFilter by remember { mutableStateOf("all") }
+    val isDark = isSystemInDarkTheme()
 
     val skillFilters = listOf(
         "all" to "Tất cả",
@@ -85,7 +88,7 @@ fun TestResultsChartScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = TMixNavy,
+                    containerColor = if (isDark) Color(0xFF0F1E33) else TMixNavy,
                     titleContentColor = Color.White,
                     navigationIconContentColor = Color.White
                 )
@@ -104,7 +107,7 @@ fun TestResultsChartScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.ErrorOutline, null, Modifier.size(64.dp), tint = Error)
                         Spacer(Modifier.height(16.dp))
-                        Text(state.message, color = TextSecondary)
+                        Text(state.message, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.height(16.dp))
                         Button(
                             onClick = { testViewModel.loadAttemptHistory() },
@@ -128,7 +131,7 @@ fun TestResultsChartScreen(
                 ) {
                     // Summary card
                     item {
-                        SummaryCard(filteredAttempts)
+                        SummaryCard(filteredAttempts, isDark)
                     }
 
                     // Skill filter chips
@@ -140,23 +143,15 @@ fun TestResultsChartScreen(
                         ) {
                             items(skillFilters) { (key, label) ->
                                 val isSelected = selectedSkillFilter == key
-                                val containerColor by animateColorAsState(
-                                    if (isSelected) TMixNavy else SurfaceVariant,
-                                    tween(200), label = "chipColor"
-                                )
-                                val contentColor by animateColorAsState(
-                                    if (isSelected) Color.White else TextSecondary,
-                                    tween(200), label = "chipTextColor"
-                                )
                                 FilterChip(
                                     selected = isSelected,
                                     onClick = { selectedSkillFilter = key },
                                     label = { Text(label, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = containerColor,
-                                        selectedLabelColor = contentColor,
-                                        containerColor = containerColor,
-                                        labelColor = contentColor
+                                        selectedContainerColor = if (isDark) Color(0xFF1A2B45) else TMixNavy,
+                                        selectedLabelColor = Color.White,
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 )
                             }
@@ -166,12 +161,14 @@ fun TestResultsChartScreen(
                     // Chart section
                     item {
                         if (sortedAttempts.size >= 2) {
-                            ChartSection(sortedAttempts)
+                            ChartSection(sortedAttempts, isDark)
                         } else {
                             Card(
                                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 shape = TMixShapes.Card,
-                                colors = CardDefaults.cardColors(containerColor = InfoLight)
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isDark) Info.copy(0.1f) else InfoLight
+                                )
                             ) {
                                 Row(
                                     Modifier.padding(16.dp),
@@ -182,7 +179,7 @@ fun TestResultsChartScreen(
                                     Text(
                                         "Cần ít nhất 2 bài thi để hiển thị biểu đồ",
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = TextPrimary
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                             }
@@ -192,7 +189,7 @@ fun TestResultsChartScreen(
                     // Skill distribution
                     item {
                         if (filteredAttempts.isNotEmpty()) {
-                            SkillDistributionCard(allAttempts)
+                            SkillDistributionCard(allAttempts, isDark)
                         }
                     }
 
@@ -202,7 +199,8 @@ fun TestResultsChartScreen(
                             "Kết quả gần đây",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
 
@@ -216,17 +214,18 @@ fun TestResultsChartScreen(
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Icon(
                                         Icons.Default.Assignment, null,
-                                        Modifier.size(48.dp), tint = TextSecondary.copy(0.5f)
+                                        Modifier.size(48.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.5f)
                                     )
                                     Spacer(Modifier.height(8.dp))
-                                    Text("Chưa có kết quả nào", color = TextSecondary)
+                                    Text("Chưa có kết quả nào", color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
                     }
 
                     items(filteredAttempts.sortedByDescending { it.submittedAt }.take(15)) { attempt ->
-                        AttemptResultCard(attempt, onClick = { onAttemptClick(attempt.id) })
+                        AttemptResultCard(attempt, isDark = isDark, onClick = { onAttemptClick(attempt.id) })
                     }
                 }
             }
@@ -238,7 +237,7 @@ fun TestResultsChartScreen(
  * Summary statistics card
  */
 @Composable
-private fun SummaryCard(attempts: List<TestAttempt>) {
+private fun SummaryCard(attempts: List<TestAttempt>, isDark: Boolean) {
     val totalTests = attempts.size
     val averageScore = if (attempts.isNotEmpty()) attempts.map { it.percentage }.average() else 0.0
     val passRate = if (attempts.isNotEmpty())
@@ -248,14 +247,15 @@ private fun SummaryCard(attempts: List<TestAttempt>) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         shape = TMixShapes.Card,
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(if (isDark) 0.dp else 4.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
                     Brush.linearGradient(
-                        listOf(TMixNavy, TMixNavyLight)
+                        if (isDark) listOf(Color(0xFF0D1B2E), Color(0xFF1A2B45))
+                        else listOf(TMixNavy, TMixNavyLight)
                     )
                 )
                 .padding(20.dp)
@@ -274,9 +274,9 @@ private fun SummaryCard(attempts: List<TestAttempt>) {
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     StatItem("Đã làm", "$totalTests", "bài", Color.White)
-                    StatItem("Điểm TB", "${averageScore.toInt()}%", "", 
+                    StatItem("Điểm TB", "${averageScore.toInt()}%", "",
                         if (averageScore >= 70) Success else TMixRedLight)
-                    StatItem("Tỷ lệ đạt", "$passRate%", "", 
+                    StatItem("Tỷ lệ đạt", "$passRate%", "",
                         if (passRate >= 50) Success else TMixRedLight)
                     StatItem("Cao nhất", "${highestScore.toInt()}%", "", Success)
                 }
@@ -302,10 +302,10 @@ private fun StatItem(label: String, value: String, unit: String, valueColor: Col
 }
 
 /**
- * Line chart section using Vico
+ * Line chart section using Vico — adaptive dark mode colors
  */
 @Composable
-private fun ChartSection(attempts: List<TestAttempt>) {
+private fun ChartSection(attempts: List<TestAttempt>, isDark: Boolean) {
     val dateFormat = remember { SimpleDateFormat("dd/MM", Locale.getDefault()) }
     val parseFormat = remember { SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()) }
 
@@ -335,22 +335,28 @@ private fun ChartSection(attempts: List<TestAttempt>) {
         }
     }
 
+    // Adaptive chart colors
+    val lineColor = if (isDark) Color(0xFF60A5FA) else TMixNavy  // Brighter blue for dark mode
+    val axisLabelColor = if (isDark) Color.White.copy(0.6f) else TextSecondary
+    val guidelineColor = if (isDark) Color.White.copy(0.08f) else SurfaceVariant
+
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(2.dp)
+        elevation = CardDefaults.cardElevation(if (isDark) 0.dp else 2.dp)
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
                 "📈 Tiến trình điểm số",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 "Phần trăm điểm theo thời gian",
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(16.dp))
 
@@ -359,26 +365,26 @@ private fun ChartSection(attempts: List<TestAttempt>) {
                     rememberLineCartesianLayer(
                         lineProvider = LineCartesianLayer.LineProvider.series(
                             LineCartesianLayer.rememberLine(
-                                fill = LineCartesianLayer.LineFill.single(fill(TMixNavy)),
+                                fill = LineCartesianLayer.LineFill.single(fill(lineColor)),
                                 areaFill = LineCartesianLayer.AreaFill.single(
-                                    fill(TMixNavy.copy(alpha = 0.15f))
+                                    fill(lineColor.copy(alpha = 0.2f))
                                 ),
                             )
                         )
                     ),
                     startAxis = VerticalAxis.rememberStart(
                         label = rememberTextComponent(
-                            color = TextSecondary,
+                            color = axisLabelColor,
                             textSize = 11.sp,
                         ),
                         guideline = rememberLineComponent(
-                            fill = fill(SurfaceVariant),
+                            fill = fill(guidelineColor),
                             thickness = 1.dp,
                         ),
                     ),
                     bottomAxis = HorizontalAxis.rememberBottom(
                         label = rememberTextComponent(
-                            color = TextSecondary,
+                            color = axisLabelColor,
                             textSize = 10.sp,
                         ),
                         valueFormatter = bottomAxisValueFormatter,
@@ -397,17 +403,21 @@ private fun ChartSection(attempts: List<TestAttempt>) {
                         .background(Success, shape = MaterialTheme.shapes.extraSmall)
                 )
                 Spacer(Modifier.width(6.dp))
-                Text("Đường điểm đạt: 70%", style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+                Text(
+                    "Đường điểm đạt: 70%",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
 }
 
 /**
- * Skill distribution breakdown card
+ * Skill distribution breakdown card — dark mode adaptive
  */
 @Composable
-private fun SkillDistributionCard(attempts: List<TestAttempt>) {
+private fun SkillDistributionCard(attempts: List<TestAttempt>, isDark: Boolean) {
     val skillGroups = attempts.groupBy { it.test?.skillType ?: "reading" }
     val skillNames = mapOf(
         "reading" to "📖 Đọc hiểu",
@@ -426,13 +436,14 @@ private fun SkillDistributionCard(attempts: List<TestAttempt>) {
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(2.dp)
+        elevation = CardDefaults.cardElevation(if (isDark) 0.dp else 2.dp)
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
                 "🎯 Phân bổ theo kỹ năng",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(Modifier.height(12.dp))
 
@@ -454,7 +465,8 @@ private fun SkillDistributionCard(attempts: List<TestAttempt>) {
                         skillNames[skill] ?: skill,
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.Medium,
-                        modifier = Modifier.width(90.dp)
+                        modifier = Modifier.width(90.dp),
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     LinearProgressIndicator(
                         progress = { animatedFraction },
@@ -463,7 +475,7 @@ private fun SkillDistributionCard(attempts: List<TestAttempt>) {
                             .height(10.dp)
                             .clip(MaterialTheme.shapes.small),
                         color = color,
-                        trackColor = color.copy(alpha = 0.15f),
+                        trackColor = color.copy(alpha = if (isDark) 0.2f else 0.15f),
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
@@ -476,7 +488,7 @@ private fun SkillDistributionCard(attempts: List<TestAttempt>) {
                     Text(
                         "(${skillAttempts.size})",
                         style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -485,10 +497,10 @@ private fun SkillDistributionCard(attempts: List<TestAttempt>) {
 }
 
 /**
- * Individual attempt result card
+ * Individual attempt result card — dark mode adaptive
  */
 @Composable
-private fun AttemptResultCard(attempt: TestAttempt, onClick: () -> Unit = {}) {
+private fun AttemptResultCard(attempt: TestAttempt, isDark: Boolean = false, onClick: () -> Unit = {}) {
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
     val parseFormat = remember { SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()) }
 
@@ -510,7 +522,7 @@ private fun AttemptResultCard(attempt: TestAttempt, onClick: () -> Unit = {}) {
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(1.dp),
+        elevation = CardDefaults.cardElevation(if (isDark) 0.dp else 1.dp),
         onClick = onClick
     ) {
         Row(
@@ -523,7 +535,10 @@ private fun AttemptResultCard(attempt: TestAttempt, onClick: () -> Unit = {}) {
                     .size(48.dp)
                     .clip(CircleShape)
                     .background(
-                        if (attempt.passed) SuccessLight else ErrorLight
+                        if (attempt.passed)
+                            (if (isDark) Success.copy(0.15f) else SuccessLight)
+                        else
+                            (if (isDark) Error.copy(0.15f) else ErrorLight)
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -546,20 +561,24 @@ private fun AttemptResultCard(attempt: TestAttempt, onClick: () -> Unit = {}) {
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Spacer(Modifier.height(2.dp))
                 Text(
                     formattedDate,
                     style = MaterialTheme.typography.labelSmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             // Pass/Fail badge
             Surface(
-                color = if (attempt.passed) SuccessLight else ErrorLight,
+                color = if (attempt.passed)
+                    (if (isDark) Success.copy(0.15f) else SuccessLight)
+                else
+                    (if (isDark) Error.copy(0.15f) else ErrorLight),
                 shape = TMixShapes.Chip
             ) {
                 Row(

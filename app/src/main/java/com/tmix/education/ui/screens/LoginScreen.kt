@@ -265,8 +265,8 @@ fun LoginScreen(
 
                     // Form Container
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        // Email Field (Premium Filled Style)
-                        TextField(
+                        // Email Field (Outlined Style — like Forgot Password)
+                        OutlinedTextField(
                             value = email,
                             onValueChange = {
                                 email = it
@@ -274,15 +274,15 @@ fun LoginScreen(
                                     viewModel.resetState()
                                 }
                             },
-                            label = { Text("Email", color = Color.Gray) },
-                            leadingIcon = { Icon(Icons.Default.Email, "Email", tint = Color.Gray) },
+                            label = { Text("Email") },
+                            leadingIcon = { Icon(Icons.Default.Email, "Email", tint = Color(0xFF9CA3AF)) },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp), // 16dp rounded
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFFF4F5F6),
-                                unfocusedContainerColor = Color(0xFFF4F5F6),
-                                focusedIndicatorColor = Color.Transparent, // No underline/border
-                                unfocusedIndicatorColor = Color.Transparent,
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = TMixNavy,
+                                unfocusedBorderColor = Color(0xFFE2E8F0),
+                                focusedLabelColor = TMixNavy,
+                                unfocusedLabelColor = Color(0xFF9CA3AF),
                                 cursorColor = TMixNavy
                             ),
                             keyboardOptions = KeyboardOptions(
@@ -296,8 +296,8 @@ fun LoginScreen(
                             enabled = !isLoading
                         )
 
-                        // Password Field (Premium Filled Style)
-                        TextField(
+                        // Password Field (Outlined Style)
+                        OutlinedTextField(
                             value = password,
                             onValueChange = {
                                 password = it
@@ -305,24 +305,24 @@ fun LoginScreen(
                                     viewModel.resetState()
                                 }
                             },
-                            label = { Text("Mật khẩu", color = Color.Gray) },
-                            leadingIcon = { Icon(Icons.Default.Lock, "Lock", tint = Color.Gray) },
+                            label = { Text("Mật khẩu") },
+                            leadingIcon = { Icon(Icons.Default.Lock, "Lock", tint = Color(0xFF9CA3AF)) },
                             trailingIcon = {
                                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                     Icon(
                                         if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                                         "Toggle Password",
-                                        tint = Color.Gray
+                                        tint = Color(0xFF9CA3AF)
                                     )
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFFF4F5F6),
-                                unfocusedContainerColor = Color(0xFFF4F5F6),
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = TMixNavy,
+                                unfocusedBorderColor = Color(0xFFE2E8F0),
+                                focusedLabelColor = TMixNavy,
+                                unfocusedLabelColor = Color(0xFF9CA3AF),
                                 cursorColor = TMixNavy
                             ),
                             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -431,7 +431,7 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Login Button
+                    // Login Button — Gradient Premium
                     Button(
                         onClick = {
                             focusManager.clearFocus()
@@ -440,90 +440,126 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
-                        shape = RoundedCornerShape(16.dp), // Fully rounded feeling
-                        colors = ButtonDefaults.buttonColors(containerColor = TMixRed),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                        contentPadding = PaddingValues(),
                         elevation = ButtonDefaults.buttonElevation(
-                            defaultElevation = 0.dp,
-                            pressedElevation = 0.dp
-                        ), // Flat design
+                            defaultElevation = 4.dp,
+                            pressedElevation = 8.dp
+                        ),
                         enabled = !isLoading
                     ) {
-                        if (isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text(
-                                "Đăng nhập",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp,
-                                color = Color.White
-                            )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.horizontalGradient(
+                                        listOf(TMixRed, Color(0xFFE8475F))
+                                    ),
+                                    RoundedCornerShape(16.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        "Đăng nhập",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        color = Color.White
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Icon(
+                                        Icons.Default.ArrowForward,
+                                        contentDescription = null,
+                                        tint = Color.White.copy(0.8f),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
                     // -- SOCIAL LOGIN DIVIDER --
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFF0F0F0))
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE8ECF0))
                         Text(
-                            "  Hoặc đăng nhập bằng  ",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray,
+                            "  hoặc  ",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color(0xFF9CA3AF),
                             fontWeight = FontWeight.Medium
                         )
-                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFF0F0F0))
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color(0xFFE8ECF0))
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
-                    // Social Buttons Row (Circles)
+                    // Social Buttons — Wide Pill Style
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // Facebook Circle
-                        OutlinedIconButton(
+                        // Facebook Pill
+                        OutlinedButton(
                             onClick = { /* TODO: Facebook */ },
-                            modifier = Modifier.size(54.dp),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                Color(0xFFE2E8F0)
-                            ),
-                            shape = androidx.compose.foundation.shape.CircleShape
+                            modifier = Modifier.weight(1f).height(48.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color(0xFFF8F9FB)
+                            )
                         ) {
                             Image(
                                 painter = painterResource(id = R.drawable.ic_facebook),
-                                contentDescription = "Facebook Login",
-                                modifier = Modifier.size(26.dp)
+                                contentDescription = "Facebook",
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Facebook",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF374151)
                             )
                         }
 
-                        Spacer(Modifier.width(24.dp))
-
-                        // Google Circle
-                        OutlinedIconButton(
+                        // Google Pill
+                        OutlinedButton(
                             onClick = { /* TODO: Google */ },
-                            modifier = Modifier.size(54.dp),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                Color(0xFFE2E8F0)
-                            ),
-                            shape = androidx.compose.foundation.shape.CircleShape
+                            modifier = Modifier.weight(1f).height(48.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color(0xFFF8F9FB)
+                            )
                         ) {
                             Image(
                                 painter = painterResource(id = R.drawable.ic_google),
-                                contentDescription = "Google Login",
-                                modifier = Modifier.size(26.dp)
+                                contentDescription = "Google",
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Google",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color(0xFF374151)
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }
