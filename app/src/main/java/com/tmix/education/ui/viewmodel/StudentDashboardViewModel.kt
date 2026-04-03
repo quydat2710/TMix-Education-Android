@@ -10,6 +10,7 @@ import com.tmix.education.data.repository.ClassRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 /**
@@ -53,7 +54,7 @@ class StudentDashboardViewModel(
     }
     
     /**
-     * Load all dashboard data
+     * Load all dashboard data — parallel API calls for speed
      */
     fun loadDashboard() {
         val user = authRepository.getCurrentUser() ?: return
@@ -62,8 +63,25 @@ class StudentDashboardViewModel(
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, user = user, error = null)
             
-            // Load student profile
-            val studentResult = studentRepository.getStudent(userId)
+            // Launch all 3 API calls in parallel
+            val studentDeferred = async { studentRepository.getStudent(userId) }
+            val attendanceDeferred = async { studentRepository.getAttendanceStats(userId) }
+            val testsDeferred = async {
+                try {
+                    val apiService = ApiConfig.getApiService()
+                    val response = apiService.getAvailableTests()
+                    if (response.isSuccessful) {
+                        response.body()?.data ?: emptyList()
+                    } else emptyList()
+                } catch (_: Exception) { emptyList<Test>() }
+            }
+            
+            // Await all results
+            val studentResult = studentDeferred.await()
+            val statsResult = attendanceDeferred.await()
+            val tests = testsDeferred.await()
+            
+            // Process student data
             studentResult.onSuccess { student ->
                 _state.value = _state.value.copy(
                     student = student,
@@ -106,7 +124,6 @@ class StudentDashboardViewModel(
                 val todaySchedule = mutableListOf<ScheduleItem>()
                 val today = java.time.LocalDate.now()
                 val todayDow = today.dayOfWeek.value // 1=Mon ... 7=Sun
-                // Backend: "0"=Sun, "1"=Mon, ..., "6"=Sat
                 val todayBackend = if (todayDow == 7) "0" else todayDow.toString()
                 
                 student.classes?.forEach { enrollment ->
@@ -130,23 +147,14 @@ class StudentDashboardViewModel(
                 _state.value = _state.value.copy(error = error.message)
             }
             
-            // Load attendance stats
-            val statsResult = studentRepository.getAttendanceStats(userId)
+            // Apply attendance stats
             statsResult.onSuccess { stats ->
                 _state.value = _state.value.copy(attendanceStats = stats)
             }
             
-            // Load upcoming tests count
-            try {
-                val apiService = ApiConfig.getApiService()
-                val testsResponse = apiService.getAvailableTests()
-                if (testsResponse.isSuccessful && testsResponse.body()?.data != null) {
-                    val tests = testsResponse.body()?.data ?: emptyList()
-                    // Count tests not yet attempted
-                    val upcoming = tests.count { !it.hasAttempted }
-                    _state.value = _state.value.copy(upcomingTests = upcoming)
-                }
-            } catch (_: Exception) {}
+            // Apply tests count
+            val upcoming = tests.count { !it.hasAttempted }
+            _state.value = _state.value.copy(upcomingTests = upcoming)
             
             _state.value = _state.value.copy(isLoading = false)
         }

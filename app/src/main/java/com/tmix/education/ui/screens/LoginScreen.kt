@@ -283,7 +283,9 @@ fun LoginScreen(
                                 unfocusedBorderColor = Color(0xFFE2E8F0),
                                 focusedLabelColor = TMixNavy,
                                 unfocusedLabelColor = Color(0xFF9CA3AF),
-                                cursorColor = TMixNavy
+                                cursorColor = TMixNavy,
+                                focusedTextColor = Color(0xFF1E293B),
+                                unfocusedTextColor = Color(0xFF1E293B)
                             ),
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Email,
@@ -323,7 +325,9 @@ fun LoginScreen(
                                 unfocusedBorderColor = Color(0xFFE2E8F0),
                                 focusedLabelColor = TMixNavy,
                                 unfocusedLabelColor = Color(0xFF9CA3AF),
-                                cursorColor = TMixNavy
+                                cursorColor = TMixNavy,
+                                focusedTextColor = Color(0xFF1E293B),
+                                unfocusedTextColor = Color(0xFF1E293B)
                             ),
                             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(

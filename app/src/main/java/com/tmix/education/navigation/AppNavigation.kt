@@ -269,7 +269,8 @@ fun AppNavigation() {
                     onNotificationClick = { navController.navigate(Screen.Notifications.route) },
                     onChildClick = { navController.navigate(Screen.ParentChildren.route) },
                     onPaymentClick = { navController.navigate(Screen.ParentPayments.route) },
-                    onCourseClick = { navController.navigate(Screen.CourseList.route) }
+                    onCourseClick = { navController.navigate(Screen.CourseList.route) },
+                    onScheduleClick = { navController.navigate(Screen.ParentSchedule.route) }
                 )
             }
             

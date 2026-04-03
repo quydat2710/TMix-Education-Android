@@ -52,7 +52,8 @@ fun ParentDashboardScreen(
     onNotificationClick: () -> Unit = {},
     onChildClick: () -> Unit = {},
     onPaymentClick: () -> Unit = {},
-    onCourseClick: () -> Unit = {}
+    onCourseClick: () -> Unit = {},
+    onScheduleClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val children = state.children
@@ -178,21 +179,22 @@ fun ParentDashboardScreen(
                                     Box(
                                         Modifier.fillMaxWidth()
                                             .background(Brush.linearGradient(listOf(TMixNavy, TMixNavySoft)))
-                                            .padding(18.dp)
+                                            .padding(14.dp)
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Box(
-                                                Modifier.size(42.dp).clip(CircleShape)
+                                                Modifier.size(38.dp).clip(CircleShape)
                                                     .background(Color.White.copy(0.15f)),
                                                 contentAlignment = Alignment.Center
                                             ) {
-                                                Icon(Icons.Filled.People, null, Modifier.size(24.dp), tint = Color.White)
+                                                Icon(Icons.Filled.People, null, Modifier.size(20.dp), tint = Color.White)
                                             }
-                                            Spacer(Modifier.width(14.dp))
-                                            Column {
+                                            Spacer(Modifier.width(12.dp))
+                                            Column(Modifier.weight(1f)) {
                                                 Text("${children.size}",
-                                                    style = MaterialTheme.typography.headlineMedium,
-                                                    fontWeight = FontWeight.Bold, color = Color.White)
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold, color = Color.White,
+                                                    maxLines = 1, overflow = TextOverflow.Ellipsis)
                                                 Text("Con của tôi",
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = Color.White.copy(0.8f))
@@ -210,18 +212,18 @@ fun ParentDashboardScreen(
                                     Box(
                                         Modifier.fillMaxWidth()
                                             .background(Brush.linearGradient(listOf(TMixRed, TMixRedSoft)))
-                                            .padding(18.dp)
+                                            .padding(14.dp)
                                     ) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Box(
-                                                Modifier.size(42.dp).clip(CircleShape)
+                                                Modifier.size(38.dp).clip(CircleShape)
                                                     .background(Color.White.copy(0.15f)),
                                                 contentAlignment = Alignment.Center
                                             ) {
-                                                Icon(Icons.Filled.Payment, null, Modifier.size(24.dp), tint = Color.White)
+                                                Icon(Icons.Filled.Payment, null, Modifier.size(20.dp), tint = Color.White)
                                             }
-                                            Spacer(Modifier.width(14.dp))
-                                            Column {
+                                            Spacer(Modifier.width(12.dp))
+                                            Column(Modifier.weight(1f)) {
                                                 val pendingText = if (state.totalPendingAmount > 0) {
                                                     val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
                                                     formatter.maximumFractionDigits = 0
@@ -229,7 +231,8 @@ fun ParentDashboardScreen(
                                                 } else "0đ"
                                                 Text(pendingText,
                                                     style = MaterialTheme.typography.titleMedium,
-                                                    fontWeight = FontWeight.Bold, color = Color.White)
+                                                    fontWeight = FontWeight.Bold, color = Color.White,
+                                                    maxLines = 1, overflow = TextOverflow.Ellipsis)
                                                 Text("Học phí/tháng",
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = Color.White.copy(0.8f))
@@ -316,7 +319,7 @@ fun ParentDashboardScreen(
                                 QuickActionCard(Modifier.weight(1f), Icons.Filled.CalendarMonth,
                                     "Lịch học", "Xem chi tiết",
                                     Brush.linearGradient(listOf(TMixNavy, TMixNavySoft)),
-                                    onClick = onChildClick)
+                                    onClick = onScheduleClick)
                                 QuickActionCard(Modifier.weight(1f), Icons.Filled.QrCode2,
                                     "Thanh toán", "Quét QR",
                                     Brush.linearGradient(listOf(TMixRed, TMixRedSoft)),

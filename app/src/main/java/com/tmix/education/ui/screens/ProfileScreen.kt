@@ -55,6 +55,7 @@ fun ProfileScreen(
 ) {
     val themeManager = LocalThemeManager.current
     val isDarkMode by themeManager.isDarkMode.collectAsState()
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     val userName = user?.name ?: if (isStudent) "Học sinh" else "Phụ huynh"
     val userRole = if (isStudent) "Học sinh" else "Phụ huynh"
@@ -259,7 +260,7 @@ fun ProfileScreen(
             // Logout
             item {
                 OutlinedButton(
-                    onClick = onLogout,
+                    onClick = { showLogoutDialog = true },
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                     shape = TMixShapes.Button,
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Error)
@@ -296,8 +297,76 @@ fun ProfileScreen(
                 avatarUrl = selectedImageUri ?: avatarUrl
             )
         }
-    }
-}
+
+        // Logout Confirmation Dialog
+        if (showLogoutDialog) {
+            AlertDialog(
+                onDismissRequest = { showLogoutDialog = false },
+                icon = {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(Error.copy(0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = null,
+                            tint = Error,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+                },
+                title = {
+                    Text(
+                        "Đăng xuất?",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                text = {
+                    Text(
+                        "Bạn có chắc muốn đăng xuất khỏi tài khoản không?",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showLogoutDialog = false
+                            onLogout()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Error),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Đăng xuất",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                },
+                dismissButton = {
+                    OutlinedButton(
+                        onClick = { showLogoutDialog = false },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Hủy", fontWeight = FontWeight.Medium)
+                    }
+                },
+                shape = RoundedCornerShape(20.dp)
+            )
+        }
+    } // Box
+} // ProfileScreen
 
 // ---------------------------------------------------------
 // REUSABLE COMPONENTS

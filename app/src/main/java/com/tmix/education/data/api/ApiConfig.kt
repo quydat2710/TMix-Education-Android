@@ -99,10 +99,16 @@ object ApiConfig {
     }
     
     /**
-     * Create OkHttpClient with interceptors
+     * Create OkHttpClient with interceptors and cache
      */
     private fun createOkHttpClient(): OkHttpClient {
+        val cacheDir = java.io.File(
+            android.os.Environment.getDownloadCacheDirectory(), "tmix_http_cache"
+        )
+        val cache = okhttp3.Cache(cacheDir, 10L * 1024 * 1024) // 10 MB
+        
         return OkHttpClient.Builder()
+            .cache(cache)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)

@@ -160,7 +160,7 @@ fun CourseRegistrationScreen(
                         showSuccessDialog = false
                         onSuccess()
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = TMixRed)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text("Hoàn tất")
                 }
@@ -192,14 +192,14 @@ fun CourseRegistrationScreen(
                     Modifier.fillMaxWidth().height(80.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = TMixRed, modifier = Modifier.size(24.dp))
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                 }
             } else {
                 classInfo?.let { info ->
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Brush.linearGradient(listOf(TMixNavy, Color(0xFF2C5282))))
+                            .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primaryContainer)))
                             .padding(20.dp)
                     ) {
                         Column {
@@ -370,7 +370,7 @@ fun CourseRegistrationScreen(
                         .fillMaxWidth()
                         .height(52.dp),
                     enabled = !isSubmitting,
-                    colors = ButtonDefaults.buttonColors(containerColor = TMixRed),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     if (isSubmitting) {
@@ -393,7 +393,7 @@ fun CourseRegistrationScreen(
                 Text(
                     "Bằng cách gửi đăng ký, bạn đồng ý cho trung tâm liên hệ qua email và số điện thoại đã cung cấp.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary.copy(0.7f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.7f),
                     modifier = Modifier.padding(horizontal = 8.dp)
                 )
                 
