@@ -35,8 +35,13 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
     private val _showSnackbar = MutableStateFlow(false)
     val showSnackbar: StateFlow<Boolean> = _showSnackbar.asStateFlow()
 
+    // Recent notifications for the quick dropdown
+    private val _recentNotifications = MutableStateFlow<List<Notification>>(emptyList())
+    val recentNotifications: StateFlow<List<Notification>> = _recentNotifications.asStateFlow()
+
     init {
         refreshUnreadCount()
+        loadRecentNotifications()
         startSSE()
         registerFCMToken()
     }
@@ -49,6 +54,18 @@ class NotificationViewModel(application: Application) : AndroidViewModel(applica
             notificationRepository.getUnreadCount()
                 .onSuccess { count ->
                     _unreadCount.value = count
+                }
+        }
+    }
+    
+    /**
+     * Fetch the 5 most recent notifications for the quick dropdown preview
+     */
+    fun loadRecentNotifications() {
+        viewModelScope.launch {
+            notificationRepository.getNotifications(page = 1, limit = 5)
+                .onSuccess { response ->
+                    _recentNotifications.value = response.result
                 }
         }
     }

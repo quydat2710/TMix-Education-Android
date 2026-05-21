@@ -126,10 +126,23 @@ fun SplashScreen(
         if (authRepository.isLoggedIn()) {
             val user = authRepository.getCurrentUser()
             if (user != null) {
-                if (authRepository.isStudent()) {
-                    onNavigateToStudentDashboard()
+                // Verify token is still valid by making a lightweight API call
+                val isTokenValid = try {
+                    val response = com.tmix.education.data.api.ApiConfig.getApiService().getDashboard()
+                    response.isSuccessful
+                } catch (e: Exception) {
+                    false
+                }
+                
+                if (isTokenValid) {
+                    if (authRepository.isStudent()) {
+                        onNavigateToStudentDashboard()
+                    } else {
+                        onNavigateToParentDashboard()
+                    }
                 } else {
-                    onNavigateToParentDashboard()
+                    // Token expired — interceptor already cleared data
+                    onNavigateToLogin()
                 }
             } else {
                 onNavigateToLogin()

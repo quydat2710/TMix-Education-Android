@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +46,7 @@ import androidx.compose.runtime.collectAsState
 import com.tmix.education.ui.screens.*
 import com.tmix.education.ui.viewmodel.LoginViewModel
 import com.tmix.education.ui.viewmodel.NotificationViewModel
+import com.tmix.education.data.api.AuthEventBus
 
 @Composable
 fun AppNavigation() {
@@ -54,6 +56,19 @@ fun AppNavigation() {
     val currentUser by loginViewModel.currentUserFlow.collectAsState(initial = loginViewModel.getCurrentUser())
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    
+    // Auto-redirect to login when session expires (401 from backend)
+    LaunchedEffect(Unit) {
+        AuthEventBus.sessionExpired.collect {
+            // Only navigate if not already on login or splash screen
+            val currentRoute = navController.currentBackStackEntry?.destination?.route
+            if (currentRoute != Screen.Login.route && currentRoute != Screen.Splash.route) {
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+        }
+    }
     
     val hideBottomBarRoutes = listOf(
         "splash", "login", "forgot-password",
@@ -233,7 +248,8 @@ fun AppNavigation() {
                     },
                     onEditProfile = { navController.navigate(Screen.EditProfile.route) },
                     onChangePassword = { navController.navigate(Screen.ChangePassword.route) },
-                    onHelpCenter = { navController.navigate(Screen.HelpCenter.route) }
+                    onHelpCenter = { navController.navigate(Screen.HelpCenter.route) },
+                    onNotificationsClick = { navController.navigate(Screen.Notifications.route) }
                 )
             }
             
@@ -298,6 +314,7 @@ fun AppNavigation() {
                     },
                     onEditProfile = { navController.navigate(Screen.EditProfile.route) },
                     onChangePassword = { navController.navigate(Screen.ChangePassword.route) },
+                    onNotificationsClick = { navController.navigate(Screen.Notifications.route) },
                     onHelpCenter = { navController.navigate(Screen.HelpCenter.route) }
                 )
             }

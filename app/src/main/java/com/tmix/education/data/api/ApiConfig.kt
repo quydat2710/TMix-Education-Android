@@ -86,7 +86,22 @@ object ApiConfig {
             builder.build()
         }
         
-        chain.proceed(request)
+        val response = chain.proceed(request)
+        
+        // Detect expired token: if backend returns 401 on a non-auth endpoint,
+        // clear stored credentials and broadcast session-expired event
+        if (response.code == 401) {
+            val path = original.url.encodedPath
+            val isAuthEndpoint = path.contains("auth/login") || path.contains("auth/refresh")
+            if (!isAuthEndpoint) {
+                // Clear token so isLoggedIn() returns false
+                kotlinx.coroutines.runBlocking { tokenManager?.clearAll() }
+                // Notify UI to redirect to login
+                AuthEventBus.emitSessionExpired()
+            }
+        }
+        
+        response
     }
     
     /**

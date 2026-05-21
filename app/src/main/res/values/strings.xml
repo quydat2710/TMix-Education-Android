@@ -1,3 +1,31 @@
 <resources>
     <string name="app_name">TMixEducation</string>
+    
+    <!-- Profile Screen -->
+    <string name="profile_title">Hồ sơ</string>
+    <string name="profile_section_account">Tài khoản của tôi</string>
+    <string name="profile_section_settings">Cài đặt hệ thống</string>
+    <string name="profile_section_support">Hỗ trợ</string>
+    
+    <string name="profile_item_edit_info">Thay đổi thông tin cá nhân</string>
+    <string name="profile_item_change_pwd">Đổi mật khẩu</string>
+    <string name="profile_item_biometric">Đăng nhập sinh trắc học</string>
+    <string name="profile_item_notifications">Thông báo</string>
+    <string name="profile_item_language">Ngôn ngữ</string>
+    <string name="profile_item_dark_mode">Chế độ tối</string>
+    <string name="profile_item_help_center">Trung tâm trợ giúp</string>
+    <string name="profile_item_about">Về ứng dụng</string>
+    <string name="profile_item_rate">Đánh giá ứng dụng</string>
+    
+    <string name="role_student">Học sinh</string>
+    <string name="role_parent">Phụ huynh</string>
+    
+    <string name="action_logout">Đăng xuất</string>
+    <string name="action_cancel">Hủy</string>
+    <string name="dialog_logout_desc">Bạn có chắc muốn đăng xuất khỏi tài khoản không?</string>
+    
+    <string name="language_select_title">Chọn ngôn ngữ</string>
+    <string name="language_vietnamese">Tiếng Việt</string>
+    <string name="language_english">English (Tiếng Anh)</string>
+    <string name="toast_language_changed">Đã đổi ngôn ngữ sang Tiếng Việt</string>
 </resources>

@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -25,7 +26,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tmix.education.data.api.ApiConfig
 import com.tmix.education.ui.theme.*
+import com.tmix.education.ui.components.TTSButton
+import com.tmix.education.ui.components.speakWithTTS
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
 data class ChatMessage(
     val role: String, // "user" or "assistant"
@@ -55,6 +59,34 @@ fun ChatbotScreen(
     var input by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
 
+    // Auto-read toggle with SharedPreferences persistence
+    val context = LocalContext.current
+    var autoRead by remember {
+        mutableStateOf(
+            context.getSharedPreferences("tmix_prefs", 0)
+                .getBoolean("chatbot_autoread", false)
+        )
+    }
+
+    // Persist auto-read preference
+    LaunchedEffect(autoRead) {
+        context.getSharedPreferences("tmix_prefs", 0)
+            .edit().putBoolean("chatbot_autoread", autoRead).apply()
+    }
+
+    // Auto-read: speak latest AI message when it arrives
+    var prevMessageCount by remember { mutableIntStateOf(messages.size) }
+    LaunchedEffect(messages.size) {
+        if (autoRead && messages.size > prevMessageCount) {
+            val lastMsg = messages.last()
+            if (lastMsg.role == "assistant" && !lastMsg.content.startsWith("\u274c")) {
+                delay(300)
+                speakWithTTS(context, lastMsg.content)
+            }
+        }
+        prevMessageCount = messages.size
+    }
+
     // Auto scroll to bottom
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
@@ -78,6 +110,36 @@ fun ChatbotScreen(
                         Column {
                             Text("TMix AI Assistant", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
                             Text("• Online", style = MaterialTheme.typography.bodySmall, color = Color(0xFF16A34A))
+                        }
+                    }
+                },
+                actions = {
+                    // Auto-read toggle button
+                    Surface(
+                        onClick = { autoRead = !autoRead },
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (autoRead) Color(0xFF7c3aed).copy(alpha = 0.15f) else Color.Transparent,
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp, if (autoRead) Color(0xFF7c3aed) else Color(0xFFe2e8f0)
+                        ),
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Row(
+                            Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                if (autoRead) Icons.Default.RecordVoiceOver else Icons.Default.VoiceOverOff,
+                                contentDescription = "Auto-read",
+                                modifier = Modifier.size(16.dp),
+                                tint = if (autoRead) Color(0xFF7c3aed) else Color(0xFF9ca3af)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                if (autoRead) "🔊 Auto" else "🔇 Auto",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (autoRead) Color(0xFF7c3aed) else Color(0xFF9ca3af)
+                            )
                         }
                     }
                 },
@@ -199,11 +261,24 @@ fun ChatbotScreen(
                     ) {
                         Text(
                             msg.content,
-                            Modifier.padding(12.dp),
+                            Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = if (!isUser) 4.dp else 12.dp),
                             color = if (isUser) Color.White else Color(0xFF1F2937),
                             style = MaterialTheme.typography.bodyMedium,
                             lineHeight = 22.sp
                         )
+                        // TTS button for AI messages
+                        if (!isUser) {
+                            Row(
+                                Modifier.padding(start = 4.dp, bottom = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TTSButton(
+                                    text = msg.content,
+                                    tint = Color(0xFF7c3aed),
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        }
                     }
 
                     if (isUser) {

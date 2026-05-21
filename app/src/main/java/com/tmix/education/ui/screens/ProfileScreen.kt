@@ -23,12 +23,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
+import com.tmix.education.R
 import com.tmix.education.ui.theme.*
 import com.tmix.education.data.model.User
 import android.net.Uri
@@ -50,15 +52,24 @@ fun ProfileScreen(
     onEditProfile: () -> Unit = {},
     onChangePassword: () -> Unit = {},
     onHelpCenter: () -> Unit = {},
+    onNotificationsClick: () -> Unit = {},
     onChangeAvatar: () -> Unit = {},
     profileViewModel: ProfileViewModel = viewModel()
 ) {
     val themeManager = LocalThemeManager.current
     val isDarkMode by themeManager.isDarkMode.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showLanguageSheet by remember { mutableStateOf(false) }
+    val languageManager = LocalLanguageManager.current
+    val currentLangCode by languageManager.currentLanguage.collectAsState()
+    
+    // Derived state for the displayed language
+    val currentLanguageStr = if (currentLangCode == "vi") stringResource(R.string.language_vietnamese) else stringResource(R.string.language_english)
 
-    val userName = user?.name ?: if (isStudent) "Học sinh" else "Phụ huynh"
-    val userRole = if (isStudent) "Học sinh" else "Phụ huynh"
+    val roleStudent = stringResource(R.string.role_student)
+    val roleParent = stringResource(R.string.role_parent)
+    val userName = user?.name ?: if (isStudent) roleStudent else roleParent
+    val userRole = if (isStudent) roleStudent else roleParent
     val userEmail = user?.email ?: ""
     val avatarUrl = user?.avatar
 
@@ -195,28 +206,28 @@ fun ProfileScreen(
             }
             
             // Account Section
-            item { SectionTitle("Tài khoản của tôi") }
+            item { SectionTitle(stringResource(R.string.profile_section_account)) }
             item {
                 Card(modifier = Modifier.padding(horizontal = 20.dp), shape = TMixShapes.Card, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Column {
-                        ProfileMenuItem(Icons.Default.Person, "Thay đổi thông tin cá nhân", onClick = onEditProfile)
+                        ProfileMenuItem(Icons.Default.Person, stringResource(R.string.profile_item_edit_info), onClick = onEditProfile)
                         HorizontalDivider()
-                        ProfileMenuItem(Icons.Default.Lock, "Đổi mật khẩu", onClick = onChangePassword)
+                        ProfileMenuItem(Icons.Default.Lock, stringResource(R.string.profile_item_change_pwd), onClick = onChangePassword)
                         HorizontalDivider()
-                        ProfileMenuItem(Icons.Default.Fingerprint, "Đăng nhập sinh trắc học")
+                        ProfileMenuItem(Icons.Default.Fingerprint, stringResource(R.string.profile_item_biometric))
                     }
                 }
                 Spacer(Modifier.height(24.dp))
             }
 
             // Settings Section
-            item { SectionTitle("Cài đặt hệ thống") }
+            item { SectionTitle(stringResource(R.string.profile_section_settings)) }
             item {
                 Card(modifier = Modifier.padding(horizontal = 20.dp), shape = TMixShapes.Card, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Column {
-                        ProfileMenuItem(Icons.Default.Notifications, "Thông báo")
+                        ProfileMenuItem(Icons.Default.Notifications, stringResource(R.string.profile_item_notifications), onClick = onNotificationsClick)
                         HorizontalDivider()
-                        ProfileMenuItem(Icons.Default.Language, "Ngôn ngữ", trailing = "Tiếng Việt")
+                        ProfileMenuItem(Icons.Default.Language, stringResource(R.string.profile_item_language), trailing = currentLanguageStr, onClick = { showLanguageSheet = true })
                         HorizontalDivider()
                         // Dark mode toggle
                         Row(
@@ -225,7 +236,7 @@ fun ProfileScreen(
                         ) {
                             Icon(Icons.Default.DarkMode, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(16.dp))
-                            Text("Chế độ tối", Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+                            Text(stringResource(R.string.profile_item_dark_mode), Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
                             Switch(
                                 checked = isDarkMode,
                                 onCheckedChange = { themeManager.setDarkMode(it) },
@@ -243,15 +254,15 @@ fun ProfileScreen(
             }
             
             // Support Section
-            item { SectionTitle("Hỗ trợ") }
+            item { SectionTitle(stringResource(R.string.profile_section_support)) }
             item {
                 Card(modifier = Modifier.padding(horizontal = 20.dp), shape = TMixShapes.Card, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                     Column {
-                        ProfileMenuItem(Icons.Default.Help, "Trung tâm trợ giúp", onClick = onHelpCenter)
+                        ProfileMenuItem(Icons.Default.Help, stringResource(R.string.profile_item_help_center), onClick = onHelpCenter)
                         HorizontalDivider()
-                        ProfileMenuItem(Icons.Default.Info, "Về ứng dụng", trailing = "v1.0.0")
+                        ProfileMenuItem(Icons.Default.Info, stringResource(R.string.profile_item_about), trailing = "v1.0.0")
                         HorizontalDivider()
-                        ProfileMenuItem(Icons.Default.Star, "Đánh giá ứng dụng")
+                        ProfileMenuItem(Icons.Default.Star, stringResource(R.string.profile_item_rate))
                     }
                 }
                 Spacer(Modifier.height(24.dp))
@@ -267,7 +278,7 @@ fun ProfileScreen(
                 ) {
                     Icon(Icons.AutoMirrored.Filled.ExitToApp, null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Đăng xuất")
+                    Text(stringResource(R.string.action_logout))
                 }
                 Spacer(Modifier.height(24.dp))
             }
@@ -320,7 +331,7 @@ fun ProfileScreen(
                 },
                 title = {
                     Text(
-                        "Đăng xuất?",
+                        stringResource(R.string.action_logout),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
@@ -329,7 +340,7 @@ fun ProfileScreen(
                 },
                 text = {
                     Text(
-                        "Bạn có chắc muốn đăng xuất khỏi tài khoản không?",
+                        stringResource(R.string.dialog_logout_desc),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -347,7 +358,7 @@ fun ProfileScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            "Đăng xuất",
+                            stringResource(R.string.action_logout),
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
@@ -359,11 +370,54 @@ fun ProfileScreen(
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Hủy", fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.action_cancel), fontWeight = FontWeight.Medium)
                     }
                 },
                 shape = RoundedCornerShape(20.dp)
             )
+        }
+        
+        // Language Selection Bottom Sheet
+        if (showLanguageSheet) {
+            val languages = listOf("vi" to stringResource(R.string.language_vietnamese), "en" to stringResource(R.string.language_english))
+            
+            val toastMessage = stringResource(R.string.toast_language_changed)
+            val contextForToast = androidx.compose.ui.platform.LocalContext.current
+
+            ModalBottomSheet(
+                onDismissRequest = { showLanguageSheet = false },
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp)) {
+                    Text(stringResource(R.string.language_select_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Spacer(Modifier.height(16.dp))
+                    languages.forEach { (code, langName) ->
+                        val isSelected = currentLangCode == code
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { 
+                                    languageManager.setLanguage(code)
+                                    showLanguageSheet = false 
+                                    android.widget.Toast.makeText(contextForToast, toastMessage, android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                                .padding(vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(langName, style = MaterialTheme.typography.bodyLarge, color = if (isSelected) TMixNavy else MaterialTheme.colorScheme.onSurface, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                            if (isSelected) {
+                                Icon(Icons.Default.Check, "Selected", tint = TMixNavy)
+                            }
+                        }
+                        if (code != languages.last().first) {
+                            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+                        }
+                    }
+                    Spacer(Modifier.height(32.dp))
+                }
+            }
         }
     } // Box
 } // ProfileScreen

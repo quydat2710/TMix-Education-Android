@@ -7,9 +7,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,6 +64,11 @@ fun ParentDashboardScreen(
     val showSnackbar by (notificationViewModel?.showSnackbar ?: MutableStateFlow(false)).collectAsState()
     val latestNotification by (notificationViewModel?.latestNotification ?: MutableStateFlow(null)).collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var isRefreshing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(state.isLoading) {
+        if (!state.isLoading) isRefreshing = false
+    }
 
     LaunchedEffect(showSnackbar, latestNotification) {
         if (showSnackbar && latestNotification != null) {
@@ -89,23 +96,140 @@ fun ParentDashboardScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        onNotificationClick()
-                        notificationViewModel?.refreshUnreadCount()
-                    }) {
-                        BadgedBox(
-                            badge = {
+                    Box {
+                        var showNotificationDropdown by remember { mutableStateOf(false) }
+                        val recentNotifications by (notificationViewModel?.recentNotifications ?: MutableStateFlow(emptyList())).collectAsState()
+
+                        IconButton(onClick = {
+                            showNotificationDropdown = true
+                            notificationViewModel?.loadRecentNotifications()
+                            notificationViewModel?.refreshUnreadCount()
+                        }) {
+                            BadgedBox(
+                                badge = {
+                                    if (unreadCount > 0) {
+                                        Badge(containerColor = TMixRed) {
+                                            Text(
+                                                text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                                                style = MaterialTheme.typography.labelSmall
+                                            )
+                                        }
+                                    }
+                                }
+                            ) {
+                                Icon(Icons.Filled.Notifications, "Thông báo")
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = showNotificationDropdown,
+                            onDismissRequest = { showNotificationDropdown = false },
+                            modifier = Modifier
+                                .width(340.dp)
+                                .background(MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            // Header
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Thông báo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                 if (unreadCount > 0) {
-                                    Badge(containerColor = TMixRed) {
-                                        Text(
-                                            text = if (unreadCount > 99) "99+" else unreadCount.toString(),
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
+                                    Surface(
+                                        color = TMixRed.copy(0.1f),
+                                        shape = CircleShape
+                                    ) {
+                                        Text("$unreadCount mới", modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = TMixRed, fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
-                        ) {
-                            Icon(Icons.Filled.Notifications, "Thông báo")
+                            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+
+                            // List
+                            if (recentNotifications.isEmpty()) {
+                                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(Icons.Default.NotificationsOff, null, tint = TextSecondary.copy(0.5f), modifier = Modifier.size(32.dp))
+                                        Spacer(Modifier.height(8.dp))
+                                        Text("Không có thông báo", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
+                                    }
+                                }
+                            } else {
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    recentNotifications.forEachIndexed { index, notif ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    showNotificationDropdown = false
+                                                    onNotificationClick()
+                                                }
+                                                .background(if (!notif.isRead) MaterialTheme.colorScheme.primary.copy(0.03f) else Color.Transparent)
+                                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                                            verticalAlignment = Alignment.Top
+                                        ) {
+                                            // Icon indicator
+                                            Box(
+                                                modifier = Modifier.size(36.dp).clip(CircleShape).background(if (!notif.isRead) TMixRed.copy(0.1f) else MaterialTheme.colorScheme.surfaceVariant),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(if (!notif.isRead) Icons.Default.NotificationsActive else Icons.Default.Notifications, null, tint = if (!notif.isRead) TMixRed else TextSecondary, modifier = Modifier.size(18.dp))
+                                            }
+                                            Spacer(Modifier.width(12.dp))
+                                            // Text
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    notif.title, 
+                                                    fontWeight = if (!notif.isRead) FontWeight.Bold else FontWeight.SemiBold, 
+                                                    style = MaterialTheme.typography.bodyMedium, 
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 1, overflow = TextOverflow.Ellipsis
+                                                )
+                                                Spacer(Modifier.height(4.dp))
+                                                Text(
+                                                    notif.message, 
+                                                    style = MaterialTheme.typography.bodySmall, 
+                                                    color = TextSecondary, 
+                                                    maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                                    lineHeight = 16.sp
+                                                )
+                                            }
+                                            // Unread Dot
+                                            if (!notif.isRead) {
+                                                Spacer(Modifier.width(8.dp))
+                                                Box(Modifier.size(8.dp).clip(CircleShape).background(TMixRed).align(Alignment.CenterVertically))
+                                            }
+                                        }
+                                        if (index < recentNotifications.size - 1) {
+                                            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Footer Button
+                            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        showNotificationDropdown = false
+                                        onNotificationClick()
+                                    }
+                                    .padding(vertical = 14.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "Xem tất cả", 
+                                    color = TMixNavy, 
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
                         }
                     }
                 }
@@ -154,8 +278,17 @@ fun ParentDashboardScreen(
                 }
             }
             else -> {
+              PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = {
+                    isRefreshing = true
+                    viewModel.refresh()
+                    notificationViewModel?.refreshUnreadCount()
+                },
+                modifier = Modifier.fillMaxSize().padding(padding)
+              ) {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(padding),
+                    modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(20.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
@@ -362,6 +495,7 @@ fun ParentDashboardScreen(
                         }
                     }
                 }
+              }
             }
         }
     }

@@ -21,6 +21,8 @@ import com.tmix.education.navigation.AppNavigation
 import com.tmix.education.ui.theme.LocalThemeManager
 import com.tmix.education.ui.theme.TMixEducationTheme
 import com.tmix.education.ui.theme.ThemeManager
+import com.tmix.education.ui.theme.LanguageManager
+import com.tmix.education.ui.theme.LocalLanguageManager
 
 class MainActivity : ComponentActivity() {
 
@@ -42,10 +44,23 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
+            val context = androidx.compose.ui.platform.LocalContext.current
             val themeManager = remember { ThemeManager() }
             val isDarkMode by themeManager.isDarkMode.collectAsState()
             
-            CompositionLocalProvider(LocalThemeManager provides themeManager) {
+            val languageManager = remember { LanguageManager(applicationContext) }
+            val currentLanguage by languageManager.currentLanguage.collectAsState()
+            
+            // Create a localized context using the current language state
+            val localizedContext = remember(currentLanguage) {
+                LanguageManager.createLocaleContext(context, currentLanguage)
+            }
+            
+            CompositionLocalProvider(
+                LocalThemeManager provides themeManager,
+                LocalLanguageManager provides languageManager,
+                androidx.compose.ui.platform.LocalContext provides localizedContext
+            ) {
                 TMixEducationTheme(darkTheme = isDarkMode) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
