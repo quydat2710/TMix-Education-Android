@@ -63,9 +63,17 @@ class FCMService : FirebaseMessagingService() {
     }
 
     /**
-     * Send FCM token to backend for this user
+     * Send FCM token to backend for this user.
+     * Only sends if the user is currently logged in.
      */
     private fun sendTokenToServer(token: String) {
+        // Only register if user is logged in
+        val tokenManager = ApiConfig.getTokenManager()
+        if (tokenManager?.isLoggedInSync() != true) {
+            Log.d(TAG, "User not logged in, skipping FCM token registration")
+            return
+        }
+
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val apiService = ApiConfig.getApiService()

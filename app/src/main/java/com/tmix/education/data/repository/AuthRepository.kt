@@ -1,5 +1,7 @@
 package com.tmix.education.data.repository
 
+import android.util.Log
+import com.google.firebase.messaging.FirebaseMessaging
 import com.tmix.education.data.api.ApiConfig
 import com.tmix.education.data.api.ApiErrorParser
 import com.tmix.education.data.api.ApiService
@@ -8,7 +10,9 @@ import com.tmix.education.data.model.LoginRequest
 import com.tmix.education.data.model.LoginResponse
 import com.tmix.education.data.model.User
 import com.tmix.education.data.model.ChangePasswordRequest
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -18,6 +22,10 @@ class AuthRepository(
     private val apiService: ApiService = ApiConfig.getApiService(),
     private val tokenManager: TokenManager? = ApiConfig.getTokenManager()
 ) {
+    
+    companion object {
+        private const val TAG = "AuthRepository"
+    }
     
     /**
      * Login with email and password
@@ -36,12 +44,47 @@ class AuthRepository(
                     user = loginResponse.user
                 )
                 
+                // Register FCM token immediately after successful login
+                registerFCMTokenAfterLogin()
+                
                 Result.success(loginResponse.user)
             } else {
                 Result.failure(Exception(ApiErrorParser.parse(response)))
             }
         } catch (e: Exception) {
             Result.failure(Exception(ApiErrorParser.parseException(e)))
+        }
+    }
+    
+    /**
+     * Register FCM device token with the backend right after login.
+     * This ensures push notifications work immediately.
+     */
+    private fun registerFCMTokenAfterLogin() {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w(TAG, "FCM token fetch failed", task.exception)
+                return@addOnCompleteListener
+            }
+            val token = task.result
+            Log.d(TAG, "Registering FCM token after login: $token")
+            
+            // Send to backend on IO thread
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val freshApiService = ApiConfig.getApiService()
+                    val response = freshApiService.registerDeviceToken(
+                        mapOf("token" to token, "platform" to "android")
+                    )
+                    if (response.isSuccessful) {
+                        Log.d(TAG, "FCM token registered after login ✓")
+                    } else {
+                        Log.w(TAG, "FCM token register failed: ${response.code()}")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error registering FCM token after login", e)
+                }
+            }
         }
     }
     
@@ -94,7 +137,7 @@ class AuthRepository(
     }
     
     /**
-     * Logout - clear local data
+     * Logout - clear local data and cookies
      */
     suspend fun logout() {
         tokenManager?.clearAll()

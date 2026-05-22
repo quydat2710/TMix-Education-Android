@@ -1,6 +1,8 @@
 package com.tmix.education.data.api
 
 import android.content.Context
+import android.util.Log
+import com.tmix.education.data.local.PersistentCookieJar
 import com.tmix.education.data.local.TokenManager
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -14,42 +16,42 @@ import java.util.concurrent.TimeUnit
  * Provides Retrofit instance configured for TMix Backend
  */
 object ApiConfig {
+
+    private const val TAG = "ApiConfig"
     
     // For Android Emulator connecting to localhost
-    // Use 10.0.2.2 for emulator, actual IP for physical device
     private const val BASE_URL_EMULATOR = "http://10.0.2.2:8080/api/v1/"
     private const val BASE_URL_LOCALHOST = "http://localhost:8080/api/v1/"
     
     // For physical device - use your computer's local IP
-    // Find your IP: Windows -> ipconfig, Mac/Linux -> ifconfig
     private const val BASE_URL_PHYSICAL_DEVICE = "http://192.168.1.145:8080/api/v1/"
     
     // Production URL
     private const val BASE_URL_PRODUCTION = "https://tmixeducation.id.vn/api/v1/"
     
-    // Current active URL - CHANGE THIS based on how you're testing
-    // Use BASE_URL_EMULATOR for Android Emulator
-    // Use BASE_URL_PHYSICAL_DEVICE for physical phone on same WiFi
-    // Use BASE_URL_PRODUCTION for deployed server
+    // Current active URL
     var BASE_URL = BASE_URL_PRODUCTION
         private set
     
     private var retrofit: Retrofit? = null
     private var apiService: ApiService? = null
     private var tokenManager: TokenManager? = null
+    private var cookieJar: PersistentCookieJar? = null
+
+    // Flag to prevent infinite refresh loop
+    @Volatile
+    private var isRefreshing = false
     
     /**
      * Initialize API with context for TokenManager
      */
     fun init(context: Context, isProduction: Boolean = false) {
         tokenManager = TokenManager(context)
-        // Keep the current BASE_URL setting (set at declaration)
-        // Only change to production URL if isProduction is true
+        cookieJar = PersistentCookieJar(context)
         if (isProduction) {
             BASE_URL = BASE_URL_PRODUCTION
         }
-        // For physical device testing, BASE_URL is already set to BASE_URL_PHYSICAL_DEVICE
-        retrofit = null // Force rebuild
+        retrofit = null
         apiService = null
     }
     
@@ -63,7 +65,10 @@ object ApiConfig {
     }
     
     /**
-     * Auth Interceptor - Adds JWT token to requests
+     * Auth Interceptor - Adds JWT token to requests.
+     * On 401, tries to refresh the token automatically using the refresh_token cookie.
+     * If refresh succeeds, retries the original request with the new token.
+     * If refresh fails, returns the 401 response as-is (caller decides what to do).
      */
     private fun createAuthInterceptor(): Interceptor = Interceptor { chain ->
         val original = chain.request()
@@ -73,7 +78,6 @@ object ApiConfig {
         val request = if (token != null) {
             val builder = original.newBuilder()
                 .header("Authorization", "Bearer $token")
-            // Don't force Content-Type for multipart requests
             if (!hasContentType) {
                 builder.header("Content-Type", "application/json")
             }
@@ -88,20 +92,108 @@ object ApiConfig {
         
         val response = chain.proceed(request)
         
-        // Detect expired token: if backend returns 401 on a non-auth endpoint,
-        // clear stored credentials and broadcast session-expired event
+        // On 401, try to refresh the token (only for non-auth endpoints)
         if (response.code == 401) {
             val path = original.url.encodedPath
             val isAuthEndpoint = path.contains("auth/login") || path.contains("auth/refresh")
-            if (!isAuthEndpoint) {
-                // Clear token so isLoggedIn() returns false
-                kotlinx.coroutines.runBlocking { tokenManager?.clearAll() }
-                // Notify UI to redirect to login
-                AuthEventBus.emitSessionExpired()
+            
+            if (!isAuthEndpoint && !isRefreshing) {
+                Log.d(TAG, "Got 401 on $path, attempting token refresh...")
+                val newToken = tryRefreshToken()
+                
+                if (newToken != null) {
+                    Log.d(TAG, "Token refresh succeeded, retrying original request")
+                    response.close()
+                    
+                    val retryRequest = original.newBuilder()
+                        .header("Authorization", "Bearer $newToken")
+                        .build()
+                    return@Interceptor chain.proceed(retryRequest)
+                } else {
+                    Log.w(TAG, "Token refresh failed — returning 401 to caller")
+                    // DON'T clear data here. Let the caller (SplashScreen) decide.
+                    // Only emit session expired so active screens can react.
+                    AuthEventBus.emitSessionExpired()
+                }
             }
         }
         
         response
+    }
+
+    /**
+     * Attempt to refresh the access token using the refresh_token cookie.
+     * Returns the new access token on success, null on failure.
+     */
+    private fun tryRefreshToken(): String? {
+        synchronized(this) {
+            if (isRefreshing) return null
+            isRefreshing = true
+        }
+
+        try {
+            val jar = cookieJar ?: return null
+
+            // Build a minimal OkHttp client with just the cookie jar (no auth interceptor)
+            val refreshClient = OkHttpClient.Builder()
+                .cookieJar(jar)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .addInterceptor(createLoggingInterceptor())
+                .build()
+
+            val refreshUrl = BASE_URL + "auth/refresh"
+            Log.d(TAG, "Refreshing token via: $refreshUrl")
+
+            val request = okhttp3.Request.Builder()
+                .url(refreshUrl)
+                .get()
+                .build()
+
+            val response = refreshClient.newCall(request).execute()
+            Log.d(TAG, "Refresh response code: ${response.code}")
+
+            if (response.isSuccessful) {
+                val body = response.body?.string()
+                if (body != null) {
+                    Log.d(TAG, "Refresh response body length: ${body.length}")
+                    try {
+                        val json = com.google.gson.JsonParser.parseString(body).asJsonObject
+                        val data = json.getAsJsonObject("data")
+                        val newAccessToken = data?.get("access_token")?.asString
+
+                        if (newAccessToken != null) {
+                            kotlinx.coroutines.runBlocking {
+                                tokenManager?.saveAccessToken(newAccessToken)
+
+                                val userJson = data.getAsJsonObject("user")
+                                if (userJson != null) {
+                                    val gson = com.google.gson.Gson()
+                                    val user = gson.fromJson(userJson, com.tmix.education.data.model.User::class.java)
+                                    tokenManager?.saveUser(user)
+                                }
+                            }
+
+                            Log.d(TAG, "Token refreshed successfully ✓")
+                            return newAccessToken
+                        } else {
+                            Log.w(TAG, "access_token not found in response. Body: ${body.take(200)}")
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to parse refresh response: ${e.message}. Body: ${body.take(200)}")
+                    }
+                }
+            } else {
+                Log.w(TAG, "Refresh request failed with code: ${response.code}")
+            }
+
+            return null
+        } catch (e: Exception) {
+            Log.e(TAG, "Token refresh error", e)
+            return null
+        } finally {
+            isRefreshing = false
+        }
     }
     
     /**
@@ -114,16 +206,17 @@ object ApiConfig {
     }
     
     /**
-     * Create OkHttpClient with interceptors and cache
+     * Create OkHttpClient with interceptors, cookie jar, and cache
      */
     private fun createOkHttpClient(): OkHttpClient {
         val cacheDir = java.io.File(
             android.os.Environment.getDownloadCacheDirectory(), "tmix_http_cache"
         )
-        val cache = okhttp3.Cache(cacheDir, 10L * 1024 * 1024) // 10 MB
+        val cache = okhttp3.Cache(cacheDir, 10L * 1024 * 1024)
         
         return OkHttpClient.Builder()
             .cache(cache)
+            .cookieJar(cookieJar ?: okhttp3.CookieJar.NO_COOKIES)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -160,11 +253,27 @@ object ApiConfig {
      * Get TokenManager instance
      */
     fun getTokenManager(): TokenManager? = tokenManager
+
+    /**
+     * Get CookieJar instance
+     */
+    fun getCookieJar(): PersistentCookieJar? = cookieJar
     
     /**
-     * Clear cached instances (for logout or config change)
+     * Clear cached instances and cookies (for logout)
      */
     fun reset() {
+        retrofit = null
+        apiService = null
+        cookieJar?.clear()
+    }
+
+    /**
+     * Perform a full logout — clear tokens, cookies, and cached instances
+     */
+    fun logout() {
+        kotlinx.coroutines.runBlocking { tokenManager?.clearAll() }
+        cookieJar?.clear()
         retrofit = null
         apiService = null
     }
