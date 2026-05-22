@@ -192,3 +192,109 @@ data class SubmitWritingRequest(
     @SerializedName("writingResponse")
     val writingResponse: String
 )
+
+// ═══════════════════════════════════════════════
+// Parent: Child Test Results (from GET /students/:id/test-attempts)
+// ═══════════════════════════════════════════════
+
+/**
+ * Skill breakdown data
+ */
+data class SkillBreakdown(
+    @SerializedName("averageScore")
+    val averageScore: Double = 0.0,
+
+    @SerializedName("count")
+    val count: Int = 0
+)
+
+/**
+ * Summary statistics for a student's test performance
+ */
+data class TestAttemptSummary(
+    @SerializedName("totalAttempts")
+    val totalAttempts: Int = 0,
+
+    @SerializedName("averageScore")
+    val averageScore: Double = 0.0,
+
+    @SerializedName("passRate")
+    val passRate: Double = 0.0,
+
+    @SerializedName("bestSkill")
+    val bestSkill: String = "",
+
+    @SerializedName("bySkillType")
+    val bySkillType: Map<String, SkillBreakdown> = emptyMap()
+)
+
+/**
+ * A single test attempt item for parent view (lightweight)
+ */
+data class TestAttemptItem(
+    @SerializedName("id")
+    val id: String = "",
+
+    @SerializedName("testTitle")
+    val testTitle: String = "",
+
+    @SerializedName("testSkillType")
+    val testSkillType: String = "",
+
+    @SerializedName("className")
+    val className: String = "",
+
+    @SerializedName("score")
+    val score: Double = 0.0,
+
+    @SerializedName("percentage")
+    val percentage: Double = 0.0,
+
+    @SerializedName("passed")
+    val passed: Boolean = false,
+
+    @SerializedName("submittedAt")
+    val submittedAt: String = ""
+)
+
+/**
+ * Chart trend data point
+ */
+data class TrendPoint(
+    @SerializedName("percentage")
+    val percentage: Double = 0.0,
+
+    @SerializedName("submittedAt")
+    val submittedAt: String = "",
+
+    @SerializedName("skillType")
+    val skillType: String = ""
+)
+
+/**
+ * Chart data container
+ */
+data class TestChartData(
+    @SerializedName("trend")
+    val trend: List<TrendPoint> = emptyList(),
+
+    @SerializedName("skillBreakdown")
+    val skillBreakdown: Map<String, SkillBreakdown> = emptyMap()
+)
+
+/**
+ * Full response from GET /students/:id/test-attempts
+ */
+data class ChildTestResults(
+    @SerializedName("meta")
+    val meta: PaginationMeta = PaginationMeta(),
+
+    @SerializedName("summary")
+    val summary: TestAttemptSummary = TestAttemptSummary(),
+
+    @SerializedName("charts")
+    val charts: TestChartData = TestChartData(),
+
+    @SerializedName("attempts")
+    val attempts: List<TestAttemptItem> = emptyList()
+)

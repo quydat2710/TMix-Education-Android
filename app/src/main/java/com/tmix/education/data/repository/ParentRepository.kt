@@ -145,4 +145,26 @@ class ParentRepository(
             Result.failure(Exception(ApiErrorParser.parseException(e)))
         }
     }
+
+    /**
+     * Get test results for a child — calls new parent API.
+     * Properly propagates errors to UI for loading/error/empty states.
+     */
+    suspend fun getChildTestResults(
+        childId: String,
+        page: Int = 1,
+        limit: Int = 20
+    ): Result<ChildTestResults> = withContext(Dispatchers.IO) {
+        try {
+            val response = apiService.getChildTestAttempts(childId, page, limit)
+            if (response.isSuccessful && response.body()?.data != null) {
+                Result.success(response.body()!!.data!!)
+            } else {
+                Result.failure(Exception(ApiErrorParser.parse(response)))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception(ApiErrorParser.parseException(e)))
+        }
+    }
 }
+

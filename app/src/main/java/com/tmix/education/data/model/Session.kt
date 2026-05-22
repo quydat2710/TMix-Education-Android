@@ -94,7 +94,7 @@ data class AttendanceStats(
 
 /**
  * Backend response for GET /sessions/student/:studentId
- * The backend returns pre-calculated attendance stats
+ * The backend returns pre-calculated attendance stats + detailed per-session records
  */
 data class StudentAttendanceResponse(
     @SerializedName("student")
@@ -103,8 +103,39 @@ data class StudentAttendanceResponse(
     @SerializedName("attendanceStats")
     val attendanceStats: AttendanceStatsRaw? = null,
 
+    @SerializedName("detailedAttendance")
+    val detailedAttendance: List<AttendanceDetail>? = null,
+
     @SerializedName("totalRecord")
     val totalRecord: Int = 0
+)
+
+/**
+ * Per-session attendance detail
+ */
+data class AttendanceDetail(
+    @SerializedName("date")
+    val date: String,
+
+    @SerializedName("class")
+    val classInfo: AttendanceClassInfo? = null,
+
+    @SerializedName("status")
+    val status: String,
+
+    @SerializedName("note")
+    val note: String? = null
+)
+
+data class AttendanceClassInfo(
+    @SerializedName("id")
+    val id: String? = null,
+
+    @SerializedName("name")
+    val name: String? = null,
+
+    @SerializedName("grade")
+    val grade: String? = null
 )
 
 data class AttendanceStatsRaw(
@@ -127,3 +158,4 @@ data class AttendanceStatsRaw(
         late = lateSessions
     )
 }
+

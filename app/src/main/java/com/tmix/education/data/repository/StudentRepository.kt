@@ -82,6 +82,22 @@ class StudentRepository(
             Result.success(AttendanceStats()) // Fallback to empty stats
         }
     }
+
+    /**
+     * Get full attendance data: stats + detailed per-session records
+     */
+    suspend fun getFullAttendance(studentId: String): Result<StudentAttendanceResponse> = withContext(Dispatchers.IO) {
+        try {
+            val response = apiService.getStudentAttendance(studentId)
+            if (response.isSuccessful && response.body()?.data != null) {
+                Result.success(response.body()!!.data!!)
+            } else {
+                Result.success(StudentAttendanceResponse())
+            }
+        } catch (e: Exception) {
+            Result.success(StudentAttendanceResponse())
+        }
+    }
     
     /**
      * Get student payments

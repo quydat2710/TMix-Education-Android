@@ -77,6 +77,17 @@ interface ApiService {
         @Path("id") studentId: String,
         @Body updates: Map<String, @JvmSuppressWildcards Any>
     ): Response<ApiResponse<Student>>
+
+    /**
+     * Get test attempts for a student (used by parent portal)
+     * GET /students/:studentId/test-attempts
+     */
+    @GET("students/{studentId}/test-attempts")
+    suspend fun getChildTestAttempts(
+        @Path("studentId") studentId: String,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 20
+    ): Response<ApiResponse<ChildTestResults>>
     
     /**
      * Upload avatar image URL

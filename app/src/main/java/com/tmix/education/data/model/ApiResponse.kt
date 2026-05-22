@@ -38,5 +38,11 @@ data class PaginationMeta(
     val totalPages: Int = 1,
     
     @SerializedName("totalItems")
-    val totalItems: Int = 0
+    val totalItems: Int = 0,
+
+    @SerializedName("hasNextPage")
+    val hasNextPage: Boolean = false,
+
+    @SerializedName("hasPrevPage")
+    val hasPrevPage: Boolean = false
 )
