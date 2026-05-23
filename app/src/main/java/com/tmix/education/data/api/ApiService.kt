@@ -452,4 +452,36 @@ interface ApiService {
         @Query("page") page: Int = 1,
         @Query("limit") limit: Int = 50
     ): Response<ApiResponse<MaterialsResponse>>
+
+    // =====================================================
+    // DICTATION PRACTICE (TTS)
+    // =====================================================
+
+    /**
+     * Get a random dictation sentence metadata (text is hidden)
+     * GET /tts/dictation/random?level=easy|medium|hard
+     */
+    @GET("tts/dictation/random")
+    suspend fun getDictationRandom(
+        @Query("level") level: String? = null
+    ): Response<ApiResponse<DictationSentence>>
+
+    /**
+     * Generate TTS audio for a dictation sentence
+     * POST /tts/dictation/audio
+     * Returns binary WAV audio
+     */
+    @POST("tts/dictation/audio")
+    suspend fun getDictationAudio(
+        @Body request: DictationAudioRequest
+    ): Response<okhttp3.ResponseBody>
+
+    /**
+     * Check user's dictation answer
+     * POST /tts/dictation/check
+     */
+    @POST("tts/dictation/check")
+    suspend fun checkDictation(
+        @Body request: DictationCheckRequest
+    ): Response<ApiResponse<DictationResult>>
 }

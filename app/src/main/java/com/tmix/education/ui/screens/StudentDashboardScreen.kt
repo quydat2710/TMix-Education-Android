@@ -47,6 +47,7 @@ fun StudentDashboardScreen(
     onClassClick: (String) -> Unit = {},
     onCourseClick: () -> Unit = {},
     onMaterialsClick: () -> Unit = {},
+    onDictationClick: () -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
@@ -434,6 +435,18 @@ fun StudentDashboardScreen(
                                 "Tài liệu", "Ôn tập",
                                 Brush.linearGradient(listOf(TMixRed, TMixRedSoft)),
                                 onClick = onMaterialsClick)
+                        }
+                    }
+                }
+
+                item {
+                    SlideInFromBottom(index = 10) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                            QuickActionCard(Modifier.weight(1f), Icons.Filled.Hearing,
+                                "Luyện nghe", "Chính tả AI",
+                                Brush.linearGradient(listOf(Info, Color(0xFF7C3AED))),
+                                onClick = onDictationClick)
+                            Spacer(Modifier.weight(1f))
                         }
                     }
                 }

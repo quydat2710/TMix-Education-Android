@@ -72,7 +72,7 @@ fun AppNavigation() {
     
     val hideBottomBarRoutes = listOf(
         "splash", "login", "forgot-password",
-        "student/class/", "student/test/", "student/chatbot", "student/test-results", "student/attempt/",
+        "student/class/", "student/test/", "student/chatbot", "student/test-results", "student/attempt/", "student/dictation",
         "parent/child/",
         "notifications", "profile/edit", "profile/password", "help",
         "courses"
@@ -193,7 +193,8 @@ fun AppNavigation() {
                     onNotificationClick = { navController.navigate(Screen.Notifications.route) },
                     onClassClick = { classId -> navController.navigate(Screen.ClassDetail.createRoute(classId)) },
                     onCourseClick = { navController.navigate(Screen.CourseList.route) },
-                    onMaterialsClick = { navController.navigate(Screen.StudentMaterials.route) }
+                    onMaterialsClick = { navController.navigate(Screen.StudentMaterials.route) },
+                    onDictationClick = { navController.navigate(Screen.DictationPractice.route) }
                 )
             }
             
@@ -218,6 +219,10 @@ fun AppNavigation() {
             
             composable(Screen.StudentMaterials.route) {
                 MaterialsScreen(onBack = { navController.popBackStack() })
+            }
+            
+            composable(Screen.DictationPractice.route) {
+                DictationPracticeScreen(onBack = { navController.popBackStack() })
             }
             
             composable(Screen.StudentTestResults.route) {
